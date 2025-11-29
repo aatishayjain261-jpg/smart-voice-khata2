@@ -1,0 +1,22 @@
+{
+  "name": "Mechanic Ledger",
+  "short_name": "Ledger",
+  "description": "Offline mechanic ledger with voice, PIN lock and backup.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

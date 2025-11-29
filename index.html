@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Smart Voice Khata - Mechanic Ledger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest"
+  href="manifest.webmanifest">
+  <meta name="theme-color"
+  content="#020617">
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    body {
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 900px;
+      margin-inline: auto;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    h1, h2 {
+      margin: 0 0 8px;
+    }
+    .card {
+      background: #020617;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.9);
+      border: 1px solid #1f2937;
+    }
+    .muted { color: #9ca3af; font-size: 0.85rem; }
+    label {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      display: block;
+      margin-bottom: 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.95rem;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 1px #1d4ed8;
+    }
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.05s ease, box-shadow 0.05s ease, background 0.15s ease;
+      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.45);
+      white-space: nowrap;
+    }
+    button:hover { background: #1d4ed8; }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    }
+    button.secondary {
+      background: #111827;
+      color: #e5e7eb;
+      box-shadow: none;
+      border: 1px solid #374151;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 6px;
+      border-bottom: 1px solid #1f2937;
+    }
+    th {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9ca3af;
+    }
+    tr:hover td { background: rgba(15, 23, 42, 0.6); }
+    .pill {
+      font-variant-numeric: tabular-nums;
+    }
+    .pill-pos { color: #bbf7d0; }
+    .pill-neg { color: #fecaca; }
+
+    .log {
+      max-height: 340px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+      border-radius: 10px;
+      background: #020617;
+      border: 1px solid #111827;
+      padding: 8px;
+    }
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px dashed #1f2937;
+    }
+    .log-entry:last-child { border-bottom: none; }
+
+    .tag-add { color: #4ade80; font-weight: 600; }
+    .tag-deduct { color: #f97373; font-weight: 600; }
+
+    .toast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      padding: 10px 14px;
+      max-width: 280px;
+      font-size: 0.85rem;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.7);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 999;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .toast-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .toast-note {
+      margin-top: 2px;
+      color: #9ca3af;
+      font-size: 0.8rem;
+    }
+
+    .mini-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .mini-totals {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    /* Quick entry layout */
+    .quick-entry-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .quick-entry-row > div {
+      flex: 1 1 130px;
+      min-width: 130px;
+    }
+
+    /* Light mode overrides */
+    body.light {
+      background: #f3f4f6;
+      color: #111827;
+    }
+    body.light .card {
+      background: #ffffff;
+      border-color: #e5e7eb;
+      color: #111827;
+    }
+    body.light .muted {
+      color: #6b7280;
+    }
+    body.light input,
+    body.light select {
+      background: #f9fafb;
+      color: #111827;
+      border-color: #d1d5db;
+    }
+    body.light input:focus,
+    body.light select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px #2563eb;
+    }
+    body.light .log {
+      background: #f9fafb;
+      border-color: #e5e7eb;
+    }
+    body.light .toast {
+      background: #ffffff;
+      border-color: #e5e7eb;
+      color: #111827;
+    }
+    body.light .pill-pos { color: #166534; }
+    body.light .pill-neg { color: #b91c1c; }
+    body.light button.secondary {
+      background: #f9fafb;
+      color: #111827;
+      border-color: #d1d5db;
+    }
+
+    /* PIN lock screen */
+    .lock-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.96);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 16px;
+    }
+    .lock-card {
+      background: #020617;
+      border-radius: 16px;
+      padding: 16px 18px;
+      width: 100%;
+      max-width: 320px;
+      border: 1px solid #1f2937;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.75);
+    }
+    .lock-card h2 {
+      margin: 0 0 6px;
+    }
+    .lock-card input {
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+    body.light .lock-card {
+      background: #ffffff;
+      color: #111827;
+      border-color: #d1d5db;
+    }
+
+    /* Menu (3-line) */
+    .menu-container {
+      position: relative;
+      display: inline-block;
+    }
+    .menu-dropdown {
+      position: absolute;
+      right: 0;
+      top: 120%;
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      padding: 8px;
+      min-width: 200px;
+      z-index: 50;
+      display: none;
+    }
+    .menu-item-btn {
+      width: 100%;
+      justify-content: flex-start;
+      margin-top: 4px;
+    }
+    body.light .menu-dropdown {
+      background: #ffffff;
+      border-color: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <!-- PIN Lock Screen -->
+  <div id="lockScreen" class="lock-screen">
+    <div class="lock-card">
+      <h2 id="lockTitle">Set PIN</h2>
+      <p class="muted" id="lockSubtitle">
+        Pehli baar use kar rahe ho. 4 digit ka PIN set karo.
+      </p>
+
+      <div id="pinSetupArea">
+        <label for="pinNew">Naya PIN (4 digit)</label>
+        <input id="pinNew" maxlength="4" inputmode="numeric" />
+
+        <label for="pinConfirm" style="margin-top:6px;">PIN dobara likho</label>
+        <input id="pinConfirm" maxlength="4" inputmode="numeric" />
+
+        <button id="savePinBtn" style="margin-top:10px;">💾 Save PIN</button>
+      </div>
+
+      <div id="pinLoginArea" style="display:none;">
+        <label for="pinInput">PIN dalo</label>
+        <input id="pinInput" maxlength="4" inputmode="numeric" />
+        <button id="unlockBtn" style="margin-top:10px;">🔓 Unlock</button>
+        <!-- NEW: Forgot PIN button -->
+        <button id="forgotPinBtn" class="secondary" style="margin-top:6px; font-size:0.8rem; display:none;">
+          Forgot PIN?
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gboard Recommendation Popup -->
+  <div id="gboardPopup" style="
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.6);
+    backdrop-filter:blur(3px);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+  ">
+    <div style="
+      background:#020617;
+      color:#e5e7eb;
+      border-radius:16px;
+      border:1px solid #1f2937;
+      width:92%;
+      max-width:360px;
+      padding:20px;
+      text-align:center;
+    ">
+      <h3 style="margin-top:0;">📢 Voice Tip</h3>
+
+      <p id="gboardShortText" style="font-size:0.9rem; line-height:1.4;">
+        For the best experience, enable the mic button on your keyboard.
+        Use <b>Gboard</b> for smooth voice commands like:<br>
+        <i>"rahul ke 500 bhadao"</i>
+      </p>
+
+      <p id="gboardShowSteps" 
+         style="color:#60a5fa; cursor:pointer; margin:8px 0; font-size:0.9rem;">
+        How to enable mic?
+      </p>
+
+      <div id="gboardSteps" style="display:none; text-align:left; font-size:0.85rem; margin-top:10px; line-height:1.5;">
+        <b>Step 1:</b> Open any app where you can type (WhatsApp / Messages).<br><br>
+        <b>Step 2:</b> Tap the text box to open your keyboard.<br><br>
+        <b>Step 3:</b> Tap ⚙️ Settings on keyboard  
+        (ya comma key ko long-press karke Settings kholo).<br><br>
+        <b>Step 4:</b> Go to <b>Voice Typing</b> / <b>Google Voice Typing</b>.<br><br>
+        <b>Step 5:</b> Turn ON “Use Voice Typing”.<br><br>
+        Uske baad keyboard me mic ka button dikhne lagega.
+      </div>
+
+      <button id="gboardPopupOk" style="margin-top:16px;">
+        OK, got it
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h1>
+      <span id="shopNameLabel"></span>Mechanic Ledger
+    </h1>
+    <div class="muted">
+      1️⃣ <b>Pehle neeche wale "Add Mechanic" section se naam add karo</b> (opening balance optional).<br/>
+      2️⃣ Upar <b>Command</b> me bolo/type karo ya <b>Quick Entry</b> se select karo, fir Description aur Run dabao.<br/>
+      Example voice:<br/>
+      Command: <b>“rahul ke dedh sau bhadao”</b><br/>
+      Description: <b>“1 ton copper pipe 1/2 inch”</b><br/>
+      3️⃣ Jab chaho, data ko Excel/OneDrive ke liye CSV me export kar lo.
+    </div>
+    <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+      <div class="menu-container">
+        <button id="themeToggleBtn" class="secondary">☀ Light mode</button>
+        <button id="menuBtn" class="secondary" style="margin-left:6px;">☰</button>
+        <div id="menuDropdown" class="menu-dropdown">
+          <button id="menuHelp" class="secondary menu-item-btn">Help</button>
+          <button id="menuContact" class="secondary menu-item-btn">Contact</button>
+          <button id="menuBackup" class="secondary menu-item-btn">Backup (download)</button>
+          <button id="menuRestore" class="secondary menu-item-btn">Restore (from file)</button>
+          <button id="menuChangePin" class="secondary menu-item-btn">Change PIN</button>
+          <button id="menuChangeShop" class="secondary menu-item-btn">Change shop name</button>
+          <button class="secondary menu-item-btn" disabled>Version: v1.0.0</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD 1: Voice + Quick Entry in same card -->
+  <div class="card">
+    <!-- Voice command -->
+    <label for="commandInput">Voice Command (optional)</label>
+    <input id="commandInput" placeholder="e.g. rahul ke 5000 bhadao / rahul ke sau bhadao" />
+
+    <div class="muted" style="margin-top:6px;">
+      Ya phir niche <b>Quick Entry</b> se seedha select karo:
+    </div>
+
+    <!-- Quick Entry -->
+    <div class="quick-entry-row">
+      <div>
+        <label for="quickMechanicSelect">Mechanic</label>
+        <select id="quickMechanicSelect">
+          <option value="">Select mechanic</option>
+        </select>
+      </div>
+      <div>
+        <label for="quickAmountInput">Amount (₹)</label>
+        <input id="quickAmountInput" type="number" step="0.01" placeholder="e.g. 500" />
+      </div>
+      <div>
+        <label for="quickActionSelect">Action</label>
+        <select id="quickActionSelect">
+          <option value="ADD">ADD / Bhadao</option>
+          <option value="DEDUCT">DEDUCT / Ghatao</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Description common -->
+    <label for="descriptionInput" style="margin-top:8px;">Description / Note (optional)</label>
+    <input id="descriptionInput" placeholder="e.g. 1 ton copper pipe 1/2 inch" />
+
+    <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:8px;">
+      <button id="runCommandBtn" class="secondary">➡ Run (Command / Quick Entry)</button>
+      <button id="undoBtn" class="secondary">↩ Undo last</button>
+      <button id="editLastBtn" class="secondary">✏ Edit last</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Add Mechanic</h2>
+    <label for="mechanicName">Name</label>
+    <input id="mechanicName" placeholder="e.g. Rahul" />
+    <label for="mechanicPhone" style="margin-top:6px;">Phone (optional)</label>
+    <input id="mechanicPhone" placeholder="e.g. 9876543210" />
+    <label for="openingBalance" style="margin-top:6px;">Opening balance (optional)</label>
+    <input id="openingBalance" type="number" step="0.01" placeholder="0" />
+    <div style="margin-top:8px;">
+      <button id="addMechanicBtn">＋ Add mechanic</button>
+      <button id="resetDataBtn" class="secondary" style="margin-left:6px;">🧹 Reset data (local + PIN)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Mechanics & Balances</h2>
+    <div class="muted" id="totalSummary">Total across all mechanics: ₹0.00</div>
+
+    <label for="mechanicSearchInput" class="muted" style="margin-top:6px; display:block;">
+      Search mechanics
+    </label>
+    <input id="mechanicSearchInput" placeholder="Search by name..." />
+
+    <div style="overflow-x:auto; margin-top:8px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Name / Phone</th>
+            <th>Balance (₹)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="mechanicTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" id="miniStatementCard" style="display:none;">
+    <div class="mini-header">
+      <div>
+        <h2 id="miniTitle" style="margin-bottom:2px;">Statement</h2>
+        <div id="miniTotals" class="mini-totals"></div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button id="downloadMiniCsvBtn" class="secondary">⬇ CSV</button>
+        <button id="closeMiniBtn" class="secondary">✕ Close</button>
+      </div>
+    </div>
+    <div id="miniBody" class="log" style="max-height:220px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Transactions</h2>
+    <div id="todaySummary" class="muted" style="margin-top:4px;"></div>
+    <label for="searchInput">Search (name, amount, description)</label>
+    <input id="searchInput" placeholder="e.g. rahul, pipe, 5000, minus..." />
+    <div id="log" class="log" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Backup / Excel Export</h2>
+    <div class="muted" style="margin-bottom:6px;">
+      Niche se ek date range select karo (Transactions us range ke hisaab se aayenge).
+      Mechanics ka section hamesha current balance ke saath aayega.<br/>
+      <b>Note:</b> PIN bhi backup file me save hota hai. Agar PIN bhool jao to
+      <b>Forgot PIN</b> pe tap karke <b>isi shop name</b> ki koi bhi backup file select karo.
+      Sirf shop name verify hoga, <b>data delete nahi hoga</b> – sirf naya PIN set karne ka option milega.
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; align-items:flex-end;">
+      <div style="min-width:150px;">
+        <label for="exportRangeSelect">Range</label>
+        <select id="exportRangeSelect">
+          <option value="all">All time</option>
+          <option value="1d">Last 1 day</option>
+          <option value="7d">Last 1 week</option>
+          <option value="month">This month</option>
+          <option value="lastmonth">Last month</option>
+          <option value="quarter">Last quarter (approx 3 months)</option>
+          <option value="custom">Custom...</option>
+        </select>
+      </div>
+      <div style="min-width:150px;">
+        <label for="exportStartDate">Start date (custom)</label>
+        <input id="exportStartDate" type="date" style="display:none;" />
+      </div>
+      <div style="min-width:150px;">
+        <label for="exportEndDate">End date (custom)</label>
+        <input id="exportEndDate" type="date" style="display:none;" />
+      </div>
+      <div>
+        <button id="exportCombinedBtn">⬇ Download CSV (Mechanics + Transactions)</button>
+      </div>
+    </div>
+    <div class="muted">
+      Is CSV ko Excel ya Google Sheets me khol sakte ho. Agar OneDrive/Drive me save karoge,
+      to har device se access ho jayega.
+    </div>
+  </div>
+
+  <!-- Hidden file inputs -->
+  <input id="restoreFileInput" type="file" accept="application/json" style="display:none;" />
+  <!-- NEW: forgot-PIN specific backup input (only verifies shop name, does not change data) -->
+  <input id="forgotPinFileInput" type="file" accept="application/json" style="display:none;" />
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "mechanicLedgerLOCAL_WORDS";
+    const THEME_KEY = "mechanicLedgerTheme";
+    const PIN_KEY = "mechanicLedgerPIN";          // same as your working code
+    const GBOARD_TIP_KEY = "mechanicLedgerGboardTip";
+    const SHOP_KEY = "mechanicLedgerShopName";
+
+    let state = { mechanics: [], transactions: [] };
+    let searchQuery = "";
+    let mechanicSearchQuery = "";
+    let currentStatementMechanicId = null;
+    let toastTimeoutId = null;
+    let exportRangeMode = "all";
+    let currentTheme = "dark";
+
+    // ---------- Helpers ----------
+
+    function formatAmount(amount) {
+      if (isNaN(amount)) return "0.00";
+      return amount.toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function showToast(mechanicName, type, amount, note) {
+      const toast = document.getElementById("toast");
+      const typeClass = type === "ADD" ? "tag-add" : "tag-deduct";
+      const typeLabel = type === "ADD" ? "ADD" : "DEDUCT";
+
+      toast.innerHTML = `
+        <div class="toast-title">
+          <span class="${typeClass}">${typeLabel}</span>
+          &nbsp;₹${formatAmount(amount)} for <b>${mechanicName}</b>
+        </div>
+        ${note ? `<div class="toast-note">${note}</div>` : ""}
+      `;
+
+      toast.classList.add("show");
+      if (toastTimeoutId) clearTimeout(toastTimeoutId);
+      toastTimeoutId = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2600);
+    }
+
+    function showGboardRecommendationPopup() {
+      const pop = document.getElementById("gboardPopup");
+      if (!pop) return;
+      pop.style.display = "flex";
+
+      const showSteps = document.getElementById("gboardShowSteps");
+      const steps = document.getElementById("gboardSteps");
+      const okBtn = document.getElementById("gboardPopupOk");
+
+      if (showSteps) {
+        showSteps.onclick = () => {
+          steps.style.display = "block";
+          showSteps.style.display = "none";
+        };
+      }
+
+      if (okBtn) {
+        okBtn.onclick = () => {
+          pop.style.display = "none";
+          localStorage.setItem(GBOARD_TIP_KEY, "1");
+        };
+      }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) state = JSON.parse(raw);
+      } catch (e) {
+        console.error(e);
+      }
+      render();
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      render();
+    }
+
+    function applyTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      currentTheme = saved === "light" ? "light" : "dark";
+      if (currentTheme === "light") {
+        document.body.classList.add("light");
+      } else {
+        document.body.classList.remove("light");
+      }
+      const btn = document.getElementById("themeToggleBtn");
+      if (btn) {
+        btn.textContent = currentTheme === "light" ? "🌙 Dark mode" : "☀ Light mode";
+      }
+    }
+
+    function toggleTheme() {
+      currentTheme = currentTheme === "light" ? "dark" : "light";
+      localStorage.setItem(THEME_KEY, currentTheme);
+      applyTheme();
+    }
+
+    // ---------- Shop name ----------
+
+    function applyShopName() {
+      const label = document.getElementById("shopNameLabel");
+      if (!label) return;
+      const name = localStorage.getItem(SHOP_KEY) || "";
+      label.textContent = name ? (name + " – ") : "";
+    }
+
+    function changeShopName() {
+      const current = localStorage.getItem(SHOP_KEY) || "";
+      const entered = prompt("Enter shop name (optional):", current);
+      if (entered === null) return;
+      const trimmed = entered.trim();
+      if (trimmed) {
+        localStorage.setItem(SHOP_KEY, trimmed);
+      } else {
+        localStorage.removeItem(SHOP_KEY);
+      }
+      applyShopName();
+    }
+
+    // ---------- Backup & Restore (JSON) ----------
+
+    function backupData() {
+      const backup = {
+        version: "1",
+        createdAt: new Date().toISOString(),
+        state,
+        pin: localStorage.getItem(PIN_KEY) || null,
+        theme: localStorage.getItem(THEME_KEY) || null,
+        shopName: localStorage.getItem(SHOP_KEY) || ""
+      };
+
+      const json = JSON.stringify(backup, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "mechanic_ledger_backup.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert("Backup file download ho gaya. Isse safe jagah pe rakh lo.");
+    }
+
+    function triggerRestore() {
+      const input = document.getElementById("restoreFileInput");
+      if (!input) return;
+      input.value = "";
+      input.click();
+    }
+
+    function handleRestoreFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || typeof data !== "object" || !data.state) {
+            alert("Ye backup file sahi nahi lagti.");
+            return;
+          }
+          if (data.state) {
+            state = data.state;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          }
+          if (data.pin !== undefined) {
+            if (data.pin === null) localStorage.removeItem(PIN_KEY);
+            else localStorage.setItem(PIN_KEY, data.pin);
+          }
+          if (data.theme) {
+            localStorage.setItem(THEME_KEY, data.theme);
+          }
+          if (data.shopName !== undefined) {
+            if (data.shopName) localStorage.setItem(SHOP_KEY, data.shopName);
+            else localStorage.removeItem(SHOP_KEY);
+          }
+          alert("Restore complete. App reload ho raha hai.");
+          location.reload();
+        } catch (err) {
+          console.error(err);
+          alert("Restore me problem aayi. File ko dobara check karo.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ---------- FORGOT PIN using backup (shop name verify only, no data change) ----------
+
+    function triggerForgotPinFile() {
+      const input = document.getElementById("forgotPinFileInput");
+      if (!input) return;
+      input.value = "";
+      input.click();
+    }
+
+    function handleForgotPinFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const currentShop = (localStorage.getItem(SHOP_KEY) || "").trim();
+      if (!currentShop) {
+        alert(
+          "Forgot PIN use karne ke liye pehle shop name set hona zaroori hai.\n\n" +
+          "Is app ko pehle use karte waqt shop name set karna chahiye tha. " +
+          "Agar aapne recently 'Reset data' kiya tha to ab naya PIN set karke dubara shuru karein."
+        );
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || typeof data !== "object") {
+            alert("Ye backup file sahi nahi lagti.");
+            return;
+          }
+          const backupShop = (data.shopName || "").trim();
+
+          if (!backupShop) {
+            alert("Is backup file me shop name nahi mila. Forgot PIN ke liye valid backup chahiye.");
+            return;
+          }
+
+          if (backupShop.toLowerCase() !== currentShop.toLowerCase()) {
+            alert(
+              "Shop name match nahi hua.\n\n" +
+              "Is phone par: \"" + currentShop + "\"\n" +
+              "Backup file me: \"" + backupShop + "\"\n\n" +
+              "Wahi backup file use karo jo isi shop ke liye bana tha."
+            );
+            return;
+          }
+
+          // Shop name verified -> allow new PIN set (without touching data)
+          const newPin1 = prompt(
+            "Backup verify ho gaya (shop name match).\n\n" +
+            "Naya 4-digit PIN daalo:"
+          );
+          if (newPin1 === null) return;
+          if (!/^\d{4}$/.test(newPin1.trim())) {
+            alert("PIN 4 digit ka number hona chahiye (0-9).");
+            return;
+          }
+          const newPin2 = prompt("Naya PIN dobara likho:", "");
+          if (newPin2 === null) return;
+          if (newPin1.trim() !== newPin2.trim()) {
+            alert("Dono PIN match nahi kar rahe.");
+            return;
+          }
+
+          localStorage.setItem(PIN_KEY, newPin1.trim());
+          alert("PIN reset ho gaya. Ab yahi naya PIN use hoga. Koi data delete nahi hua.");
+          const lockScreen = document.getElementById("lockScreen");
+          if (lockScreen) lockScreen.style.display = "none";
+          const cmd = document.getElementById("commandInput");
+          if (cmd) cmd.focus();
+        } catch (err) {
+          console.error(err);
+          alert("Backup file read karte waqt problem aayi. Dobara try karo.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ---------- PIN lock logic ----------
+
+    function initLockScreen() {
+      const lockScreen = document.getElementById("lockScreen");
+      if (!lockScreen) return;
+
+      const pinSetupArea = document.getElementById("pinSetupArea");
+      const pinLoginArea = document.getElementById("pinLoginArea");
+      const lockTitle = document.getElementById("lockTitle");
+      const lockSubtitle = document.getElementById("lockSubtitle");
+      const forgotBtn = document.getElementById("forgotPinBtn");
+      const storedPin = localStorage.getItem(PIN_KEY);
+
+      if (storedPin) {
+        // PIN already set -> login mode
+        pinSetupArea.style.display = "none";
+        pinLoginArea.style.display = "block";
+        lockTitle.textContent = "Enter PIN";
+        lockSubtitle.textContent = "Apna 4 digit PIN dalo.";
+        if (forgotBtn) forgotBtn.style.display = "inline-flex";
+        setTimeout(() => {
+          const ip = document.getElementById("pinInput");
+          if (ip) ip.focus();
+        }, 50);
+      } else {
+        // No PIN yet -> setup mode
+        pinSetupArea.style.display = "block";
+        pinLoginArea.style.display = "none";
+        lockTitle.textContent = "Set PIN";
+        lockSubtitle.textContent = "Pehli baar ke liye 4 digit PIN set karo.";
+        if (forgotBtn) forgotBtn.style.display = "none";
+        setTimeout(() => {
+          const ip = document.getElementById("pinNew");
+          if (ip) ip.focus();
+        }, 50);
+      }
+
+      const saveBtn = document.getElementById("savePinBtn");
+      const unlockBtn = document.getElementById("unlockBtn");
+
+      if (saveBtn) {
+        saveBtn.onclick = () => {
+          const p1 = document.getElementById("pinNew").value.trim();
+          const p2 = document.getElementById("pinConfirm").value.trim();
+
+          if (!/^\d{4}$/.test(p1)) {
+            alert("PIN 4 digit ka number hona chahiye (sirf 0-9).");
+            return;
+          }
+          if (p1 !== p2) {
+            alert("Dono PIN same nahi hai.");
+            return;
+          }
+          localStorage.setItem(PIN_KEY, p1);
+          alert("PIN save ho gaya. Ab se app kholne ke liye yahi PIN lagega.");
+
+          // Ask shop name first time
+          if (!localStorage.getItem(SHOP_KEY)) {
+            const entered = prompt("Enter shop name (optional):", "");
+            if (entered && entered.trim()) {
+              localStorage.setItem(SHOP_KEY, entered.trim());
+            }
+            applyShopName();
+          }
+
+          lockScreen.style.display = "none";
+          if (!localStorage.getItem(GBOARD_TIP_KEY)) {
+            showGboardRecommendationPopup();
+          }
+          const cmd = document.getElementById("commandInput");
+          if (cmd) cmd.focus();
+        };
+      }
+
+      if (unlockBtn) {
+        unlockBtn.onclick = () => {
+          const entered = document.getElementById("pinInput").value.trim();
+          const real = localStorage.getItem(PIN_KEY);
+          if (entered === real) {
+            lockScreen.style.display = "none";
+            const cmd = document.getElementById("commandInput");
+            if (cmd) cmd.focus();
+          } else {
+            alert("GALAT PIN. Please dobara try karo.");
+            const ip = document.getElementById("pinInput");
+            if (ip) {
+              ip.value = "";
+              ip.focus();
+            }
+          }
+        };
+      }
+
+      if (forgotBtn) {
+        forgotBtn.onclick = () => {
+          triggerForgotPinFile();
+        };
+      }
+    }
+
+    function changePin() {
+      const oldPin = localStorage.getItem(PIN_KEY);
+      if (oldPin) {
+        const enteredOld = prompt("Enter current PIN (for safety):", "");
+        if (enteredOld === null) return;
+        if (enteredOld !== oldPin) {
+          alert("Current PIN galat hai.");
+          return;
+        }
+      }
+      const newPin1 = prompt("Enter new 4-digit PIN:", "");
+      if (newPin1 === null) return;
+      if (!/^\d{4}$/.test(newPin1.trim())) {
+        alert("PIN 4 digit ka number hona chahiye (0-9).");
+        return;
+      }
+      const newPin2 = prompt("Re-enter new PIN:", "");
+      if (newPin2 === null) return;
+      if (newPin1.trim() !== newPin2.trim()) {
+        alert("Dono PIN match nahi kar rahe.");
+        return;
+      }
+      localStorage.setItem(PIN_KEY, newPin1.trim());
+      alert("PIN change ho gaya.");
+    }
+
+    // ---------- Core data operations ----------
+
+    function addMechanic(name, openingBalance = 0, phone = "") {
+      if (!name.trim()) return;
+      const existing = state.mechanics.find(
+        m => m.name.trim().toLowerCase() === name.trim().toLowerCase()
+      );
+      if (existing) {
+        alert("Ye naam pehle se hai. Thoda alag naam rakho ya sirf command se kaam karo.");
+        return;
+      }
+
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+      const opening = Number(openingBalance) || 0;
+
+      const mech = { id, name: name.trim(), balance: 0, phone: phone.trim() || "" };
+      state.mechanics.push(mech);
+
+      if (opening) {
+        addTransaction(id, "ADD", opening, "Opening balance");
+      } else {
+        saveState();
+      }
+    }
+
+    function addTransaction(mechanicId, type, amount, note = "") {
+      const mechanic = state.mechanics.find(m => m.id === mechanicId);
+      if (!mechanic) return;
+
+      if (type === "ADD") mechanic.balance += amount;
+      else if (type === "DEDUCT") mechanic.balance -= amount;
+
+      state.transactions.unshift({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+        mechanicId,
+        mechanicName: mechanic.name,
+        type,
+        amount,
+        note,
+        timestamp: new Date().toISOString()
+      });
+
+      saveState();
+    }
+
+    function undoLastTransaction() {
+      if (state.transactions.length === 0) {
+        alert("Koi transaction nahi hai undo karne ke liye.");
+        return;
+      }
+      const last = state.transactions[0];
+      const mech = state.mechanics.find(m => m.id === last.mechanicId);
+
+      if (mech) {
+        if (last.type === "ADD") mech.balance -= last.amount;
+        else if (last.type === "DEDUCT") mech.balance += last.amount;
+      }
+
+      state.transactions.shift();
+      saveState();
+      alert("Last transaction undo kar diya gaya.");
+    }
+
+    function editLastTransaction() {
+      if (state.transactions.length === 0) {
+        alert("Koi transaction nahi hai edit karne ke liye.");
+        return;
+      }
+      const t = state.transactions[0];
+      const mech = state.mechanics.find(m => m.id === t.mechanicId);
+      if (!mech) {
+        alert("Mechanic nahi mila (data mismatch).");
+        return;
+      }
+
+      const newAmountStr = prompt(
+        "Last transaction ka amount change karo:\n\n" +
+        "Name: " + t.mechanicName + "\n" +
+        "Type: " + t.type + "\n" +
+        "Old amount: ₹" + formatAmount(t.amount) + "\n\n" +
+        "New amount (₹):",
+        t.amount
+      );
+      if (newAmountStr === null) return;
+      if (isNaN(newAmountStr) || Number(newAmountStr) <= 0) {
+        alert("Amount 0 se bada number hona chahiye.");
+        return;
+      }
+      const newAmount = Number(newAmountStr);
+
+      const newNote = prompt(
+        "Description / Note edit karo (optional):",
+        t.note || ""
+      );
+      if (newNote === null) return;
+
+      // reverse old amount
+      if (t.type === "ADD") {
+        mech.balance -= t.amount;
+      } else if (t.type === "DEDUCT") {
+        mech.balance += t.amount;
+      }
+
+      // apply new amount
+      t.amount = newAmount;
+      t.note = newNote.trim();
+
+      if (t.type === "ADD") {
+        mech.balance += newAmount;
+      } else if (t.type === "DEDUCT") {
+        mech.balance -= newAmount;
+      }
+
+      saveState();
+      alert("Last transaction update ho gaya.");
+    }
+
+    function deleteTransaction(txnId) {
+      const index = state.transactions.findIndex(t => t.id === txnId);
+      if (index === -1) {
+        alert("Transaction nahi mila.");
+        return;
+      }
+      const t = state.transactions[index];
+      const mech = state.mechanics.find(m => m.id === t.mechanicId);
+
+      const confirmMsg =
+        "Ye transaction delete karna hai?\n\n" +
+        "Name: " + (t.mechanicName || "") + "\n" +
+        "Type: " + t.type + "\n" +
+        "Amount: ₹" + formatAmount(t.amount) + "\n" +
+        "Note: " + (t.note || "-");
+      if (!confirm(confirmMsg)) return;
+
+      if (mech) {
+        if (t.type === "ADD") {
+          mech.balance -= t.amount;
+        } else if (t.type === "DEDUCT") {
+          mech.balance += t.amount;
+        }
+      }
+
+      state.transactions.splice(index, 1);
+      saveState();
+      alert("Transaction delete ho gaya.");
+    }
+
+    function deleteMechanic(id) {
+      if (!confirm("Is mechanic ka pura data hata du (sirf local se)?")) return;
+      state.mechanics = state.mechanics.filter(m => m.id !== id);
+      state.transactions = state.transactions.filter(t => t.mechanicId !== id);
+      saveState();
+    }
+
+    // EDIT mechanic including conditional opening-balance edit
+    function editMechanic(mechId) {
+      const mech = state.mechanics.find(m => m.id === mechId);
+      if (!mech) {
+        alert("Mechanic nahi mila.");
+        return;
+      }
+
+      const newName = prompt("Mechanic ka naam change karo:", mech.name);
+      if (newName === null) return;
+      const trimmedName = newName.trim();
+      if (!trimmedName) {
+        alert("Naam khali nahi ho sakta.");
+        return;
+      }
+
+      const newPhone = prompt("Phone number (optional):", mech.phone || "");
+      if (newPhone === null) return;
+
+      const exists = state.mechanics.some(
+        m => m.id !== mech.id && m.name.trim().toLowerCase() === trimmedName.toLowerCase()
+      );
+      if (exists) {
+        alert("Ye naam kisi aur mechanic ke liye use ho raha hai. Alag naam use karo.");
+        return;
+      }
+
+      // --- NEW: opening balance edit allowed only if it's the ONLY transaction ---
+      const mechTxnsAll = state.transactions.filter(t => t.mechanicId === mech.id);
+      const openingTxns = mechTxnsAll.filter(
+        t => t.type === "ADD" && t.note === "Opening balance"
+      );
+
+      if (mechTxnsAll.length === 1 && openingTxns.length === 1) {
+        const openingTxn = openingTxns[0];
+        const currentOpening = openingTxn.amount;
+        const newOpeningStr = prompt(
+          "Opening balance change karna hai?\n\n" +
+          "Current opening: ₹" + formatAmount(currentOpening) + "\n\n" +
+          "Naya opening balance likho (ya blank chhod do agar same rakhna hai):",
+          currentOpening
+        );
+
+        if (newOpeningStr !== null) {
+          const trimmed = String(newOpeningStr).trim();
+          if (trimmed !== "") {
+            if (isNaN(trimmed) || Number(trimmed) < 0) {
+              alert("Opening balance 0 ya usse bada number hona chahiye.");
+            } else {
+              const newOpening = Number(trimmed);
+              if (newOpening !== currentOpening) {
+                // reverse old opening from balance
+                mech.balance -= currentOpening;
+                // apply new opening
+                mech.balance += newOpening;
+                openingTxn.amount = newOpening;
+              }
+            }
+          }
+        }
+      }
+      // If there are more transactions, opening balance is NOT editable by design.
+
+      // Update name + phone
+      mech.name = trimmedName;
+      mech.phone = newPhone.trim();
+
+      // Propagate updated name to all transactions
+      state.transactions.forEach(t => {
+        if (t.mechanicId === mech.id) {
+          t.mechanicName = trimmedName;
+        }
+      });
+
+      saveState();
+    }
+
+    // ---------- Rendering ----------
+
+    const mechanicTableBody = document.getElementById("mechanicTableBody");
+    const logEl = document.getElementById("log");
+    const totalSummaryEl = document.getElementById("totalSummary");
+
+    function render() {
+      renderMechanics();
+      renderTransactions();
+      renderMiniStatement();
+      renderTodaySummary();
+    }
+
+    function refreshQuickEntryMechanics() {
+      const sel = document.getElementById("quickMechanicSelect");
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Select mechanic";
+      sel.appendChild(opt);
+
+      state.mechanics.forEach(m => {
+        const o = document.createElement("option");
+        o.value = m.id;
+        o.textContent = m.name;
+        sel.appendChild(o);
+      });
+
+      if (prev && state.mechanics.some(m => m.id === prev)) {
+        sel.value = prev;
+      }
+    }
+
+    function renderMechanics() {
+      mechanicTableBody.innerHTML = "";
+      let list = state.mechanics;
+
+      if (mechanicSearchQuery.trim()) {
+        const q = mechanicSearchQuery.toLowerCase();
+        list = list.filter(m => m.name.toLowerCase().includes(q));
+      }
+
+      if (list.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 3;
+        td.textContent = "No mechanics yet. Pehle neeche se naam add karo.";
+        td.className = "muted";
+        tr.appendChild(td);
+        mechanicTableBody.appendChild(tr);
+      } else {
+        list.forEach(m => {
+          const tr = document.createElement("tr");
+          const nameTd = document.createElement("td");
+          nameTd.innerHTML =
+            m.name +
+            (m.phone ? `<br><span class="muted">📞 ${m.phone}</span>` : "");
+
+          const balTd = document.createElement("td");
+          const balSpan = document.createElement("span");
+          balSpan.className = "pill " + (m.balance >= 0 ? "pill-pos" : "pill-neg");
+          balSpan.textContent = formatAmount(m.balance);
+          balTd.appendChild(balSpan);
+
+          const actionsTd = document.createElement("td");
+
+          const btnStatement = document.createElement("button");
+          btnStatement.textContent = "📄 Statement";
+          btnStatement.className = "secondary";
+          btnStatement.onclick = () => {
+            currentStatementMechanicId = m.id;
+            renderMiniStatement();
+            document.getElementById("miniStatementCard").style.display = "block";
+          };
+
+          const btnEdit = document.createElement("button");
+          btnEdit.textContent = "✏ Edit";
+          btnEdit.className = "secondary";
+          btnEdit.style.marginLeft = "6px";
+          btnEdit.onclick = () => editMechanic(m.id);
+
+          const btnAdd = document.createElement("button");
+          btnAdd.textContent = "＋ Add";
+          btnAdd.className = "secondary";
+          btnAdd.style.marginLeft = "6px";
+          btnAdd.onclick = () => {
+            const amountStr = prompt(`Kitna bhadao karna hai ${m.name} ke naam? (number only yahan better hai)`);
+            if (amountStr && !isNaN(amountStr)) {
+              addTransaction(m.id, "ADD", Number(amountStr), "Manual add");
+            }
+          };
+
+          const btnDeduct = document.createElement("button");
+          btnDeduct.textContent = "− Deduct";
+          btnDeduct.className = "secondary";
+          btnDeduct.style.marginLeft = "6px";
+          btnDeduct.onclick = () => {
+            const amountStr = prompt(`Kitna ghataana hai ${m.name} ke naam se? (number only yahan better hai)`);
+            if (amountStr && !isNaN(amountStr)) {
+              addTransaction(m.id, "DEDUCT", Number(amountStr), "Manual deduct");
+            }
+          };
+
+          const btnDelete = document.createElement("button");
+          btnDelete.textContent = "🗑";
+          btnDelete.className = "secondary";
+          btnDelete.style.marginLeft = "6px";
+          btnDelete.onclick = () => deleteMechanic(m.id);
+
+          actionsTd.appendChild(btnStatement);
+          actionsTd.appendChild(btnEdit);
+          actionsTd.appendChild(btnAdd);
+          actionsTd.appendChild(btnDeduct);
+          actionsTd.appendChild(btnDelete);
+
+          tr.appendChild(nameTd);
+          tr.appendChild(balTd);
+          tr.appendChild(actionsTd);
+          mechanicTableBody.appendChild(tr);
+        });
+      }
+
+      const total = state.mechanics.reduce((sum, m) => sum + m.balance, 0);
+      totalSummaryEl.textContent = "Total across all mechanics: ₹" + formatAmount(total);
+
+      refreshQuickEntryMechanics();
+    }
+
+    function renderTransactions() {
+      logEl.innerHTML = "";
+      let txns = state.transactions;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        txns = txns.filter(t => {
+          return (
+            t.mechanicName.toLowerCase().includes(q) ||
+            (t.note && t.note.toLowerCase().includes(q)) ||
+            t.type.toLowerCase().includes(q) ||
+            String(t.amount).includes(q)
+          );
+        });
+      }
+
+      if (txns.length === 0) {
+        const div = document.createElement("div");
+        div.className = "muted";
+        div.textContent = "No transactions yet.";
+        logEl.appendChild(div);
+      } else {
+        txns.slice(0, 200).forEach(t => {
+          const div = document.createElement("div");
+          const date = new Date(t.timestamp);
+          div.className = "log-entry";
+          const typeClass = t.type === "ADD" ? "tag-add" : "tag-deduct";
+          div.innerHTML =
+            `<span class="${typeClass}">${t.type}</span> ₹${formatAmount(t.amount)} ` +
+            `${t.type === "ADD" ? "to" : "from"} <b>${t.mechanicName}</b>` +
+            (t.note ? ` — ${t.note}` : "") +
+            `<br><span class="muted">${date.toLocaleString()}</span>`;
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "🗑 Delete";
+          delBtn.className = "secondary";
+          delBtn.style.marginTop = "4px";
+          delBtn.style.fontSize = "0.7rem";
+          delBtn.onclick = () => deleteTransaction(t.id);
+
+          div.appendChild(delBtn);
+          logEl.appendChild(div);
+        });
+      }
+    }
+
+    function renderTodaySummary() {
+      const summaryEl = document.getElementById("todaySummary");
+      if (!summaryEl) return;
+
+      if (!state.transactions.length) {
+        summaryEl.textContent = "No transactions yet today.";
+        return;
+      }
+
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = now.getMonth();
+      const d = now.getDate();
+
+      let addTotal = 0;
+      let deductTotal = 0;
+
+      state.transactions.forEach(t => {
+        const dt = new Date(t.timestamp);
+        if (
+          dt.getFullYear() === y &&
+          dt.getMonth() === m &&
+          dt.getDate() === d
+        ) {
+          if (t.type === "ADD") addTotal += t.amount;
+          else if (t.type === "DEDUCT") deductTotal += t.amount;
+        }
+      });
+
+      if (addTotal === 0 && deductTotal === 0) {
+        summaryEl.textContent = "No transactions yet today.";
+        return;
+      }
+
+      const net = addTotal - deductTotal;
+      summaryEl.innerHTML =
+        `Today – ` +
+        `<span class="tag-add">ADD: ₹${formatAmount(addTotal)}</span> ` +
+        `&nbsp;<span class="tag-deduct">DEDUCT: ₹${formatAmount(deductTotal)}</span> ` +
+        `&nbsp;<span>Net: ₹${formatAmount(net)}</span>`;
+    }
+
+    function renderMiniStatement() {
+      const card = document.getElementById("miniStatementCard");
+      const miniBody = document.getElementById("miniBody");
+      const miniTitle = document.getElementById("miniTitle");
+      const miniTotals = document.getElementById("miniTotals");
+
+      if (!currentStatementMechanicId) {
+        card.style.display = "none";
+        return;
+      }
+
+      const mech = state.mechanics.find(m => m.id === currentStatementMechanicId);
+      if (!mech) {
+        card.style.display = "none";
+        return;
+      }
+
+      const txns = state.transactions.filter(t => t.mechanicId === mech.id);
+      miniTitle.textContent = `Statement – ${mech.name}`;
+
+      let totalAdd = 0;
+      let totalDeduct = 0;
+      txns.forEach(t => {
+        if (t.type === "ADD") totalAdd += t.amount;
+        else if (t.type === "DEDUCT") totalDeduct += t.amount;
+      });
+
+      miniTotals.innerHTML =
+        `<span class="tag-add">ADD: ₹${formatAmount(totalAdd)}</span> &nbsp; ` +
+        `<span class="tag-deduct">DEDUCT: ₹${formatAmount(totalDeduct)}</span> &nbsp; ` +
+        `<span>Net: ₹${formatAmount(mech.balance)}</span>`;
+
+      miniBody.innerHTML = "";
+      if (txns.length === 0) {
+        const div = document.createElement("div");
+        div.className = "muted";
+        div.textContent = "No transactions for this mechanic yet.";
+        miniBody.appendChild(div);
+      } else {
+        txns.forEach(t => {
+          const div = document.createElement("div");
+          const date = new Date(t.timestamp);
+          const typeClass = t.type === "ADD" ? "tag-add" : "tag-deduct";
+          div.className = "log-entry";
+          div.innerHTML =
+            `<span class="${typeClass}">${t.type}</span> ₹${formatAmount(t.amount)}` +
+            (t.note ? ` — ${t.note}` : "") +
+            `<br><span class="muted">${date.toLocaleString()}</span>`;
+          miniBody.appendChild(div);
+        });
+      }
+    }
+
+    // ---------- Number word parsing (English + Hindi) ----------
+
+    function wordsToNumber(text) {
+      text = text.toLowerCase().replace(/-/g, " ");
+      const tokens = text.split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return NaN;
+
+      const englishVal = parseEnglishNumberWords(tokens);
+      if (!isNaN(englishVal) && englishVal > 0) return englishVal;
+
+      const hindiVal = parseHindiNumberWords(tokens);
+      if (!isNaN(hindiVal) && hindiVal > 0) return hindiVal;
+
+      return NaN;
+    }
+
+    function parseEnglishNumberWords(tokens) {
+      const units = {
+        "one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,
+        "ten":10,"eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,
+        "sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19
+      };
+      const tens = {
+        "twenty":20,"thirty":30,"forty":40,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90
+      };
+
+      let total = 0;
+      let current = 0;
+      let found = false;
+
+      for (const tok of tokens) {
+        if (units[tok] != null) {
+          current += units[tok];
+          found = true;
+        } else if (tens[tok] != null) {
+          current += tens[tok];
+          found = true;
+        } else if (tok === "hundred") {
+          if (current === 0) current = 1;
+          current = current * 100;
+          found = true;
+        } else if (tok === "thousand") {
+          if (current === 0) current = 1;
+          total += current * 1000;
+          current = 0;
+          found = true;
+        }
+      }
+
+      if (!found) return NaN;
+      return total + current;
+    }
+
+    function parseHindiNumberWords(tokens) {
+      const units = {
+        "ek":1,"ik":1,
+        "do":2,
+        "teen":3,"tin":3,
+        "char":4,"chaar":4,
+        "panch":5,"paanch":5,
+        "chhe":6,"che":6,"chhah":6,
+        "saat":7,"sath":7,
+        "aath":8,"ath":8,
+        "nau":9,"no":9,
+        "das":10
+      };
+
+      let total = 0;
+      let current = 0;
+      let found = false;
+
+      for (let i = 0; i < tokens.length; i++) {
+        const tok = tokens[i];
+
+        if (["dedh","ded","derd"].includes(tok) && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
+          total += 150;
+          found = true;
+          i++;
+          continue;
+        }
+
+        if ((tok === "dhai" || tok === "dhaii" || tok === "dhaiya") && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
+          total += 250;
+          found = true;
+          i++;
+          continue;
+        }
+
+        if (units[tok] != null) {
+          current += units[tok];
+          found = true;
+          continue;
+        }
+
+        if (tok === "sau" || tok === "so") {
+          if (current === 0) current = 1;
+          current = current * 100;
+          found = true;
+          continue;
+        }
+
+        if (tok === "hazar" || tok === "hazaar") {
+          if (current === 0) current = 1;
+          total += current * 1000;
+          current = 0;
+          found = true;
+          continue;
+        }
+      }
+
+      if (!found) return NaN;
+      return total + current;
+    }
+
+    function extractAmount(text) {
+      const numMatch = text.match(/(\d+(\.\d+)?)/);
+      if (numMatch) return Number(numMatch[1]);
+
+      const wordVal = wordsToNumber(text);
+      if (!isNaN(wordVal)) return wordVal;
+
+      return NaN;
+    }
+
+    // --------------- Command parsing (voice mode) ---------------
+
+    function handleCommand(text) {
+      if (!text) return false;
+      const original = text;
+      text = text.toLowerCase().trim();
+
+      const addWords = [
+        "add","add karo","add kardo",
+        "plus","plus karo","plus kardo",
+        "ka samaan liya","samaan liya","ka saman liya","saman liya",
+        "ka maal liya","maal liya",
+        "credit","credit karo",
+        "increase","increase karo",
+        "jodo","jod do",
+        "bada do","badao","badhao","bhadao",
+        "account me jod do"
+      ];
+
+      const deductWords = [
+        "deduct","deduct karo","deduct kardo",
+        "less","less karo","less kardo",
+        "minus","minus karo","minus kardo",
+        "debit","debit karo",
+        "samaan wapis kiya","saman wapis kiya","ne saman wapis kiya",
+        "ghatao","ghata do","ghata",
+        "kato","katto","kaatdo","katdo",
+        "kam karo","kam kardo",
+        "return kiya","return mila",
+        "paisa diya","paisa mila","cash mila",
+        "reduce"
+      ];
+
+      let type = null;
+      if (addWords.some(w => text.includes(w))) type = "ADD";
+      if (deductWords.some(w => text.includes(w))) type = "DEDUCT";
+
+      const amount = extractAmount(text);
+
+      let namePart = "";
+      const tokens = text.split(/\s+/);
+      const keIndex = tokens.indexOf("ke");
+      if (!namePart && keIndex > 0) {
+        namePart = tokens.slice(0, keIndex).join(" ").trim();
+      }
+      if (!namePart) {
+        const noise = new Set(["ke","ki","ka","me","mein","rs","rs.","rupay","rupees","amount"]);
+        const allTypeWords = new Set([...addWords, ...deductWords]);
+        const numWords = new Set([
+          "hundred","thousand","sau","so","hazar","hazaar","dedh","ded","dhai",
+          "ek","ik","do","teen","tin","char","chaar","panch","paanch","chhe","che","chhah",
+          "saat","sath","aath","ath","nau","no","das",
+          "one","two","three","four","five","six","seven","eight","nine","ten"
+        ]);
+        const nameTokens = tokens.filter(tok => {
+          if (!tok) return false;
+          if (/\d/.test(tok)) return false;
+          if (noise.has(tok)) return false;
+          if (allTypeWords.has(tok)) return false;
+          if (numWords.has(tok)) return false;
+          return true;
+        });
+        namePart = nameTokens.join(" ").trim();
+      }
+
+      if (!type || isNaN(amount) || !namePart) {
+        alert(
+          'Samajh nahi aaya: "' + original + '".\n\n' +
+          'Example:\n' +
+          '- rahul ke 5000 bhadao\n' +
+          '- rahul ke hundred bhadao\n' +
+          '- rahul ke sau bhadao\n' +
+          '- rahul ke dedh sau bhadao\n' +
+          '- rahul ke 2000 ghata do'
+        );
+        return false;
+      }
+
+      const mechanic = state.mechanics.find(m =>
+        m.name.toLowerCase() === namePart.toLowerCase()
+      );
+
+      if (!mechanic) {
+        alert(
+          `"${namePart}" ka naam list me nahi mila.\n` +
+          `Pehle neeche "Add Mechanic" me iss naam se entry banao, phir command do.`
+        );
+        return false;
+      }
+
+      const descInput = document.getElementById("descriptionInput");
+      const extraNote = descInput.value.trim();
+      const finalNote = extraNote
+        ? extraNote + " | Command: " + original
+        : "Command: " + original;
+
+      const previewMsg =
+        `Are you sure?\n\n` +
+        `Name: ${mechanic.name}\n` +
+        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
+        `Amount: ₹${formatAmount(amount)}\n` +
+        `Note: ${extraNote || "-"}\n`;
+
+      if (!confirm(previewMsg)) {
+        return false;
+      }
+
+      addTransaction(mechanic.id, type, amount, finalNote);
+      showToast(mechanic.name, type, amount, extraNote || original);
+      return true;
+    }
+
+    // --------------- Quick Entry parsing ---------------
+
+    function handleQuickEntry() {
+      const mechSel = document.getElementById("quickMechanicSelect");
+      const amtInput = document.getElementById("quickAmountInput");
+      const actionSel = document.getElementById("quickActionSelect");
+      const descInput = document.getElementById("descriptionInput");
+
+      if (!mechSel || !amtInput || !actionSel) return false;
+
+      const mechId = mechSel.value;
+      const amountStr = amtInput.value.trim();
+      const type = actionSel.value || "ADD";
+
+      if (!mechId || !amountStr) {
+        alert("Quick Entry ke liye mechanic select karo aur amount likho, ya upar command use karo.");
+        return false;
+      }
+
+      if (isNaN(amountStr)) {
+        alert("Amount number me likho (e.g. 500, 1200.50).");
+        return false;
+      }
+
+      const amount = Number(amountStr);
+      if (!amount || amount <= 0) {
+        alert("Amount 0 se bada hona chahiye.");
+        return false;
+      }
+
+      const mechanic = state.mechanics.find(m => m.id === mechId);
+      if (!mechanic) {
+        alert("Mechanic list me nahi mila.");
+        return false;
+      }
+
+      const extraNote = descInput.value.trim();
+      const finalNote = extraNote
+        ? extraNote + " | Quick entry"
+        : "Quick entry";
+
+      const previewMsg =
+        `Are you sure?\n\n` +
+        `Name: ${mechanic.name}\n` +
+        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
+        `Amount: ₹${formatAmount(amount)}\n` +
+        `Note: ${extraNote || "-"}\n`;
+
+      if (!confirm(previewMsg)) {
+        return false;
+      }
+
+      addTransaction(mechanic.id, type, amount, finalNote);
+      showToast(mechanic.name, type, amount, extraNote || "Quick entry");
+      return true;
+    }
+
+    // ---------- CSV / Excel export (Mechanics + Transactions "2 sub sheets") ----------
+
+    function toCSVValue(value) {
+      if (value == null) return "";
+      const s = String(value);
+      if (s.includes('"') || s.includes(",") || s.includes("\n")) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+
+    function downloadCSV(filename, rows) {
+      const csvContent = rows
+        .map(row => row.map(toCSVValue).join(","))
+        .join("\r\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportSingleMechanicCSV(mechanicId) {
+      const mech = state.mechanics.find(m => m.id === mechanicId);
+      if (!mech) {
+        alert("Mechanic nahi mila.");
+        return;
+      }
+      const txns = state.transactions
+        .slice()
+        .reverse()
+        .filter(t => t.mechanicId === mechanicId);
+
+      const rows = [];
+      rows.push(["Statement for", mech.name]);
+      rows.push(["Phone", mech.phone || ""]);
+      rows.push(["Generated at", new Date().toISOString()]);
+      rows.push([]);
+      rows.push(["id", "datetime", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
+
+      txns.forEach(t => {
+        rows.push([
+          t.id,
+          t.timestamp,
+          t.mechanicId,
+          t.mechanicName,
+          t.type,
+          t.amount,
+          t.note
+        ]);
+      });
+
+      downloadCSV(`statement_${mech.name.replace(/\s+/g, "_")}.csv`, rows);
+    }
+
+    function getSelectedDateRange() {
+      const now = new Date();
+      let start = null;
+      let end = null;
+
+      if (exportRangeMode === "all") {
+        return { start: null, end: null };
+      } else if (exportRangeMode === "1d") {
+        end = now;
+        start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      } else if (exportRangeMode === "7d") {
+        end = now;
+        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else if (exportRangeMode === "month") {
+        end = now;
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+      } else if (exportRangeMode === "lastmonth") {
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const lastMonth = month === 0 ? 11 : month - 1;
+        const lastMonthYear = month === 0 ? year - 1 : year;
+        start = new Date(lastMonthYear, lastMonth, 1);
+        end = new Date(lastMonthYear, lastMonth + 1, 0, 23, 59, 59, 999);
+      } else if (exportRangeMode === "quarter") {
+        end = now;
+        start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+      } else if (exportRangeMode === "custom") {
+        const startInput = document.getElementById("exportStartDate").value;
+        const endInput = document.getElementById("exportEndDate").value;
+        if (!startInput || !endInput) {
+          alert("Custom range ke liye start aur end date dono select karo.");
+          return { start: null, end: null, invalid: true };
+        }
+        start = new Date(startInput);
+        end = new Date(endInput);
+        end.setHours(23, 59, 59, 999);
+      }
+
+      return { start, end };
+    }
+
+    function exportCombinedCSV() {
+      const { start, end, invalid } = getSelectedDateRange();
+      if (invalid) return;
+
+      const rows = [];
+
+      // "Sheet 1": Mechanics
+      rows.push(["Mechanics"]);
+      rows.push(["id", "name", "phone", "current_balance"]);
+      state.mechanics.forEach(m => {
+        rows.push([m.id, m.name, m.phone || "", m.balance]);
+      });
+
+      rows.push([]);
+      // "Sheet 2": Transactions
+      rows.push(["Transactions"]);
+      rows.push(["id", "datetime", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
+
+      let txns = state.transactions.slice().reverse();
+
+      if (start && end) {
+        txns = txns.filter(t => {
+          const d = new Date(t.timestamp);
+          return d >= start && d <= end;
+        });
+      }
+
+      txns.forEach(t => {
+        rows.push([
+          t.id,
+          t.timestamp,
+          t.mechanicId,
+          t.mechanicName,
+          t.type,
+          t.amount,
+          t.note
+        ]);
+      });
+
+      downloadCSV("ledger_full.csv", rows);
+    }
+
+    // ---------- Event listeners ----------
+
+    document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
+
+    document.getElementById("addMechanicBtn").addEventListener("click", () => {
+      const nameInput = document.getElementById("mechanicName");
+      const phoneInput = document.getElementById("mechanicPhone");
+      const openingInput = document.getElementById("openingBalance");
+      addMechanic(
+        nameInput.value.trim(),
+        openingInput.value.trim() || 0,
+        phoneInput.value.trim()
+      );
+      nameInput.value = "";
+      phoneInput.value = "";
+      openingInput.value = "";
+      nameInput.focus();
+    });
+
+    document.getElementById("resetDataBtn").addEventListener("click", () => {
+      if (!confirm("Saara local data aur PIN hata du? (Mechanics + Transactions + PIN sab clear)")) return;
+      state = { mechanics: [], transactions: [] };
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(PIN_KEY);
+      localStorage.removeItem(GBOARD_TIP_KEY);
+      localStorage.removeItem(SHOP_KEY);
+      loadState();
+      applyShopName();
+      const lockScreen = document.getElementById("lockScreen");
+      if (lockScreen) {
+        lockScreen.style.display = "flex";
+        initLockScreen();
+      }
+    });
+
+    // Menu events
+    document.getElementById("menuBtn").addEventListener("click", () => {
+      const menu = document.getElementById("menuDropdown");
+      if (!menu) return;
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    });
+
+    document.getElementById("menuHelp").addEventListener("click", () => {
+      alert(
+        "HOW TO USE:\n\n" +
+        "1) Add Mechanic me naam daalo (phone optional, opening balance optional).\n" +
+        "2) Upar command me 'rahul ke 500 bhadao' ya Quick Entry se mechanic + amount select karo.\n" +
+        "3) Description me maal ka detail likho.\n" +
+        "4) Run dabao.\n" +
+        "5) Statement button se kisi ek mechanic ka pura hisaab dekh sakte ho.\n" +
+        "6) Backup se JSON file download karke safe rakh sakte ho; Restore se wapas laa sakte ho.\n" +
+        "7) Agar PIN bhool jao to lock screen pe 'Forgot PIN' dabao aur isi shop name ki backup file select karo."
+      );
+    });
+
+    document.getElementById("menuContact").addEventListener("click", () => {
+      alert("Contact support: (yahan baad me apna phone number / WhatsApp link add kar sakte ho).");
+    });
+
+    document.getElementById("menuBackup").addEventListener("click", backupData);
+    document.getElementById("menuRestore").addEventListener("click", triggerRestore);
+    document.getElementById("menuChangePin").addEventListener("click", changePin);
+    document.getElementById("menuChangeShop").addEventListener("click", changeShopName);
+
+    document.getElementById("restoreFileInput").addEventListener("change", handleRestoreFile);
+    document.getElementById("forgotPinFileInput").addEventListener("change", handleForgotPinFile);
+
+    document.getElementById("runCommandBtn").addEventListener("click", () => {
+      const cmdInput = document.getElementById("commandInput");
+      const cmd = cmdInput.value.trim();
+      const quickMech = document.getElementById("quickMechanicSelect").value;
+      const quickAmt = document.getElementById("quickAmountInput").value.trim();
+
+      let success = false;
+
+      if (cmd) {
+        success = handleCommand(cmd);
+        if (success) {
+          cmdInput.value = "";
+          document.getElementById("descriptionInput").value = "";
+        }
+      } else if (quickMech && quickAmt) {
+        success = handleQuickEntry();
+        if (success) {
+          document.getElementById("quickAmountInput").value = "";
+          document.getElementById("descriptionInput").value = "";
+        }
+      } else {
+        alert("Ya to upar Command likho/bolo, ya Quick Entry me mechanic aur amount bhar ke Run dabao.");
+      }
+
+      if (success) {
+        cmdInput.focus();
+      }
+    });
+
+    document.getElementById("undoBtn").addEventListener("click", undoLastTransaction);
+    document.getElementById("editLastBtn").addEventListener("click", editLastTransaction);
+
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+      searchQuery = e.target.value || "";
+      renderTransactions();
+      renderTodaySummary();
+    });
+
+    document.getElementById("mechanicSearchInput").addEventListener("input", (e) => {
+      mechanicSearchQuery = e.target.value || "";
+      renderMechanics();
+    });
+
+    document.getElementById("closeMiniBtn").addEventListener("click", () => {
+      currentStatementMechanicId = null;
+      document.getElementById("miniStatementCard").style.display = "none";
+    });
+
+    document.getElementById("downloadMiniCsvBtn").addEventListener("click", () => {
+      if (!currentStatementMechanicId) {
+        alert("Koi mechanic select nahi hai.");
+        return;
+      }
+      exportSingleMechanicCSV(currentStatementMechanicId);
+    });
+
+    document.getElementById("exportRangeSelect").addEventListener("change", (e) => {
+      exportRangeMode = e.target.value || "all";
+      const startInput = document.getElementById("exportStartDate");
+      const endInput = document.getElementById("exportEndDate");
+      if (exportRangeMode === "custom") {
+        startInput.style.display = "block";
+        endInput.style.display = "block";
+      } else {
+        startInput.style.display = "none";
+        endInput.style.display = "none";
+      }
+    });
+
+    document.getElementById("exportCombinedBtn").addEventListener("click", exportCombinedCSV);
+
+    window.addEventListener("load", () => {
+      applyTheme();
+      loadState();
+      applyShopName();
+      initLockScreen();
+    });
+  </script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker
+        .register("./service-worker.js")
+        .then((reg) => console.log("Service Worker registered:", reg.scope))
+        .catch((err) => console.error("Service Worker failed:", err));
+    });
+  }
+</script>
+</body>
+</html>
