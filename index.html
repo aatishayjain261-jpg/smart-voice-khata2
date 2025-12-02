@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <title>Smart Voice Khata - Mechanic Ledger</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <meta name="theme-color" content="#020617" />
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#020617">
 
-  <!-- Firebase (compat SDKs for simple inline usage) -->
+  <!-- Firebase compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
@@ -222,6 +222,7 @@
       border-color: #d1d5db;
     }
 
+    /* Lock screens */
     .lock-screen {
       position: fixed;
       inset: 0;
@@ -266,7 +267,7 @@
       border-radius: 12px;
       border: 1px solid #1f2937;
       padding: 8px;
-      min-width: 230px;
+      min-width: 220px;
       z-index: 50;
       display: none;
     }
@@ -279,45 +280,42 @@
       background: #ffffff;
       border-color: #e5e7eb;
     }
-
-    /* Phone auth popup */
-    #phoneAuthPopup {
-      display:none;
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,0.6);
-      backdrop-filter:blur(3px);
-      z-index:9999;
-      justify-content:center;
-      align-items:center;
-      padding:20px;
-    }
-    #phoneAuthPopupInner {
-      background:#020617;
-      color:#e5e7eb;
-      border-radius:16px;
-      border:1px solid #1f2937;
-      width:92%;
-      max-width:360px;
-      padding:18px;
-    }
-    body.light #phoneAuthPopupInner {
-      background:#ffffff;
-      color:#111827;
-      border-color:#d1d5db;
-    }
   </style>
 </head>
 <body>
 
+  <!-- PHONE LOGIN SCREEN (Firebase OTP) -->
+  <div id="phoneLoginScreen" class="lock-screen" style="display:none;">
+    <div class="lock-card">
+      <h2>Login with mobile</h2>
+      <p class="muted">
+        Pehle apna mobile number verify karo. SMS se OTP aayega.<br>
+        Same phone par agle baar seedha open hoga (OTP nahi maangega).
+      </p>
+      <label for="phoneInput">Mobile number</label>
+      <input id="phoneInput" placeholder="+91XXXXXXXXXX" />
+
+      <div id="recaptcha-container" style="margin-top:8px;"></div>
+
+      <button id="sendOtpBtn" style="margin-top:10px;">📱 Send OTP</button>
+
+      <div id="otpArea" style="display:none; margin-top:10px;">
+        <label for="otpInput">OTP</label>
+        <input id="otpInput" maxlength="6" inputmode="numeric" />
+        <button id="verifyOtpBtn" style="margin-top:8px;">✅ Verify & Continue</button>
+      </div>
+    </div>
+  </div>
+
   <!-- PIN Lock Screen -->
-  <div id="lockScreen" class="lock-screen">
+  <div id="lockScreen" class="lock-screen" style="display:none;">
     <div class="lock-card">
       <h2 id="lockTitle">Set PIN</h2>
       <p class="muted" id="lockSubtitle">
         Pehli baar use kar rahe ho. 4 digit ka PIN set karo.
       </p>
 
+      <!-- Setup PIN -->
       <div id="pinSetupArea">
         <label for="pinNew">Naya PIN (4 digit)</label>
         <input id="pinNew" maxlength="4" inputmode="numeric" />
@@ -328,43 +326,15 @@
         <button id="savePinBtn" style="margin-top:10px;">💾 Save PIN</button>
       </div>
 
+      <!-- Enter PIN -->
       <div id="pinLoginArea" style="display:none;">
         <label for="pinInput">PIN dalo</label>
         <input id="pinInput" maxlength="4" inputmode="numeric" />
         <button id="unlockBtn" style="margin-top:10px;">🔓 Unlock</button>
-        <button id="forgotPinBtn" class="secondary" style="margin-top:6px; font-size:0.8rem; display:none;">
-          Forgot PIN?
+        <button id="forgotPinBtn" class="secondary" style="margin-top:6px; font-size:0.8rem;">
+          Forgot PIN (OTP)
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- Phone Auth Popup (for optional online backup) -->
-  <div id="phoneAuthPopup">
-    <div id="phoneAuthPopupInner">
-      <h3 style="margin-top:0;">📲 Online backup (phone login)</h3>
-      <p class="muted" style="margin-bottom:8px;">
-        Apna mobile number verify karoge to <b>is device ka data</b> cloud me safe rahega.
-        Ye sirf backup hai, har device ka data alag hai.
-      </p>
-
-      <label for="phoneInput">Mobile number</label>
-      <input id="phoneInput" placeholder="+91XXXXXXXXXX" />
-
-      <div id="recaptcha-container" style="margin-top:8px;"></div>
-
-      <button id="sendOtpBtn" style="margin-top:10px;">📱 Send OTP</button>
-
-      <div id="otpArea" style="display:none; margin-top:10px;">
-        <label for="otpInput">OTP (6 digit)</label>
-        <input id="otpInput" maxlength="6" inputmode="numeric" />
-        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-          <button id="verifyOtpBtn">✅ Verify & Enable backup</button>
-          <button id="cancelOtpBtn" class="secondary">Cancel</button>
-        </div>
-      </div>
-
-      <button id="closePhonePopupBtn" class="secondary" style="margin-top:10px;">✕ Close</button>
     </div>
   </div>
 
@@ -393,8 +363,8 @@
       <h3 style="margin-top:0;">📢 Voice Tip</h3>
 
       <p id="gboardShortText" style="font-size:0.9rem; line-height:1.4;">
-        For the best experience, enable the mic button on your keyboard.
-        Use <b>Gboard</b> for smooth voice commands like:<br>
+        Best experience ke liye keyboard ka mic button ON rakho.
+        <b>Gboard</b> use karo aur aise bolo:<br>
         <i>"rahul ke 500 bhadao"</i>
       </p>
 
@@ -404,13 +374,11 @@
       </p>
 
       <div id="gboardSteps" style="display:none; text-align:left; font-size:0.85rem; margin-top:10px; line-height:1.5;">
-        <b>Step 1:</b> Open any app where you can type (WhatsApp / Messages).<br><br>
-        <b>Step 2:</b> Tap the text box to open your keyboard.<br><br>
-        <b>Step 3:</b> Tap ⚙️ Settings on keyboard
-        (ya comma key ko long-press karke Settings kholo).<br><br>
-        <b>Step 4:</b> Go to <b>Voice Typing</b> / <b>Google Voice Typing</b>.<br><br>
-        <b>Step 5:</b> Turn ON “Use Voice Typing”.<br><br>
-        Uske baad keyboard me mic ka button dikhne lagega.
+        <b>Step 1:</b> WhatsApp / Messages jaisi app khol ke keyboard open karo.<br><br>
+        <b>Step 2:</b> Keyboard pe ⚙️ Settings ya comma key ko long-press karke Settings kholo.<br><br>
+        <b>Step 3:</b> <b>Voice Typing</b> / <b>Google Voice Typing</b> pe jao.<br><br>
+        <b>Step 4:</b> “Use Voice Typing” ON karo.<br><br>
+        Ab keyboard me mic ka button dikhne lagega.
       </div>
 
       <button id="gboardPopupOk" style="margin-top:16px;">
@@ -419,41 +387,48 @@
     </div>
   </div>
 
+  <!-- TOP CARD: Title + Theme + Reset + Menu -->
   <div class="card">
-    <h1>
-      <span id="shopNameLabel"></span>Mechanic Ledger
-    </h1>
-    <div id="onlineStatus" class="muted" style="margin-bottom:4px;">
-      Cloud backup: OFF (sirf is device pe local data).
-    </div>
-    <div class="muted">
-      1️⃣ <b>Pehle neeche wale "Add Mechanic" section se naam add karo</b> (opening balance optional).<br/>
-      2️⃣ Upar <b>Command</b> me bolo/type karo ya <b>Quick Entry</b> se select karo, fir Description aur Run dabao.<br/>
-      Example voice:<br/>
-      Command: <b>“rahul ke dedh sau bhadao”</b><br/>
-      Description: <b>“Fridge repair + spare parts”</b><br/>
-      3️⃣ Jab chaho, data ko Excel/OneDrive ke liye CSV me export kar lo.
-    </div>
-    <div style="margin-top:10px; display:flex; justify-content:flex-end;">
-      <div class="menu-container">
-        <button id="themeToggleBtn" class="secondary">☀ Light mode</button>
-        <button id="menuBtn" class="secondary" style="margin-left:6px;">☰</button>
-        <div id="menuDropdown" class="menu-dropdown">
-          <button id="menuHelp" class="secondary menu-item-btn">Help</button>
-          <button id="menuContact" class="secondary menu-item-btn">Contact</button>
-          <button id="menuBackup" class="secondary menu-item-btn">Backup (download file)</button>
-          <button id="menuRestore" class="secondary menu-item-btn">Restore (from file)</button>
-          <button id="menuOnlineBackup" class="secondary menu-item-btn">Online backup (phone login)</button>
-          <button id="menuCloudRestore" class="secondary menu-item-btn">Restore from online backup</button>
-          <button id="menuLogoutCloud" class="secondary menu-item-btn">Sign out from online backup</button>
-          <button id="menuChangePin" class="secondary menu-item-btn">Change PIN</button>
-          <button id="menuChangeShop" class="secondary menu-item-btn">Change shop name</button>
-          <button class="secondary menu-item-btn" disabled>Version: v1.0.0</button>
+    <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start; flex-wrap:wrap;">
+      <div style="min-width:200px;">
+        <h1>
+          <span id="shopNameLabel"></span>Mechanic Ledger
+        </h1>
+        <div class="muted">
+          1️⃣ Pehle neeche wale <b>"Add Mechanic"</b> se naam add karo (opening balance optional).<br/>
+          2️⃣ Upar <b>Command</b> me bolo/type karo ya <b>Quick Entry</b> se select karo, fir Description aur Run dabao.<br/>
+          3️⃣ Jab chaho, Excel/OneDrive ke liye CSV export kar lo.
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+        <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+          <button id="themeToggleBtn" class="secondary">☀ Light mode</button>
+          <button id="resetDataBtnTop" class="secondary">🧹 Reset data (local + PIN)</button>
+          <div class="menu-container">
+            <button id="menuBtn" class="secondary">☰ Menu</button>
+            <div id="menuDropdown" class="menu-dropdown">
+              <button id="menuHelp" class="secondary menu-item-btn">Help</button>
+              <button id="menuContact" class="secondary menu-item-btn">Contact</button>
+              <button id="menuBackup" class="secondary menu-item-btn">Backup (download JSON)</button>
+              <button id="menuRestore" class="secondary menu-item-btn">Restore (from file)</button>
+              <button id="menuOnlineBackupToggle" class="secondary menu-item-btn">
+                Online backup: ON
+              </button>
+              <button id="menuRestoreOnline" class="secondary menu-item-btn">
+                Restore from online backup
+              </button>
+              <button id="menuChangePin" class="secondary menu-item-btn">Change PIN</button>
+              <button id="menuChangeShop" class="secondary menu-item-btn">Change shop name</button>
+              <button class="secondary menu-item-btn" disabled>Version: v1.1.0</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- COMMAND + QUICK ENTRY CARD -->
   <div class="card">
     <label for="commandInput">Voice Command (optional)</label>
     <input id="commandInput" placeholder="e.g. rahul ke 5000 bhadao / rahul ke sau bhadao" />
@@ -492,6 +467,7 @@
     </div>
   </div>
 
+  <!-- ADD MECHANIC CARD -->
   <div class="card">
     <h2>Add Mechanic</h2>
     <label for="mechanicName">Name</label>
@@ -502,10 +478,10 @@
     <input id="openingBalance" type="number" step="0.01" placeholder="0" />
     <div style="margin-top:8px;">
       <button id="addMechanicBtn">＋ Add mechanic</button>
-      <button id="resetDataBtn" class="secondary" style="margin-left:6px;">🧹 Reset data (local + PIN)</button>
     </div>
   </div>
 
+  <!-- MECHANICS & BALANCES -->
   <div class="card">
     <h2>Mechanics & Balances</h2>
     <div class="muted" id="totalSummary">Total across all mechanics: ₹0.00 | Total mechanics: 0</div>
@@ -529,6 +505,7 @@
     </div>
   </div>
 
+  <!-- MINI STATEMENT -->
   <div class="card" id="miniStatementCard" style="display:none;">
     <div class="mini-header">
       <div>
@@ -543,6 +520,7 @@
     <div id="miniBody" class="log" style="max-height:220px;"></div>
   </div>
 
+  <!-- TRANSACTIONS -->
   <div class="card">
     <h2>Transactions</h2>
     <div id="todaySummary" class="muted" style="margin-top:4px;"></div>
@@ -551,14 +529,13 @@
     <div id="log" class="log" style="margin-top:8px;"></div>
   </div>
 
+  <!-- BACKUP / EXPORT -->
   <div class="card">
-    <h2>Backup / Excel Export (file based)</h2>
+    <h2>Backup / Excel Export</h2>
     <div class="muted" style="margin-bottom:6px;">
       Niche se ek date range select karo (Transactions us range ke hisaab se aayenge).
       Mechanics ka section hamesha current balance ke saath aayega.<br/>
-      <b>Note:</b> PIN bhi backup file me save hota hai. Agar PIN bhool jao to
-      <b>Forgot PIN</b> pe tap karke <b>isi shop name</b> ki koi bhi backup file select karo.
-      Sirf shop name verify hoga, <b>data delete nahi hoga</b> – sirf naya PIN set karne ka option milega.
+      JSON backup file use karke aap kisi bhi device pe data restore kar sakte ho.
     </div>
     <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; align-items:flex-end;">
       <div style="min-width:150px;">
@@ -587,18 +564,17 @@
       </div>
     </div>
     <div class="muted">
-      Is CSV ko Excel ya Google Sheets me khol sakte ho. Agar OneDrive/Drive me save karoge,
-      to har device se access ho jayega.
+      Excel ya Google Sheets me CSV khol sakte ho. Online backup ON ho to Firestore pe bhi copy rahegi.
     </div>
   </div>
 
+  <!-- Hidden file inputs -->
   <input id="restoreFileInput" type="file" accept="application/json" style="display:none;" />
-  <input id="forgotPinFileInput" type="file" accept="application/json" style="display:none;" />
 
   <div id="toast" class="toast"></div>
 
   <script>
-    /* ------------ Firebase INIT (your config) ------------- */
+    // ------- Firebase config (YOUR PROJECT) -------
     const firebaseConfig = {
       apiKey: "AIzaSyCisaK9FKdjdCdDWyRiCw4eIEeFo2qFK-E",
       authDomain: "smart-voice-khata.firebaseapp.com",
@@ -608,17 +584,16 @@
       appId: "1:153320068128:web:853e3493da2c93ae25d845"
     };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db   = firebase.firestore();
+    const db = firebase.firestore();
 
-    /* ------------ Local keys / globals ------------- */
+    // ------- Local keys / globals -------
     const STORAGE_KEY = "mechanicLedgerLOCAL_WORDS";
-    const THEME_KEY   = "mechanicLedgerTheme";
-    const PIN_KEY     = "mechanicLedgerPIN";
+    const THEME_KEY = "mechanicLedgerTheme";
+    const PIN_KEY = "mechanicLedgerPIN";
     const GBOARD_TIP_KEY = "mechanicLedgerGboardTip";
-    const SHOP_KEY    = "mechanicLedgerShopName";
+    const SHOP_KEY = "mechanicLedgerShopName";
     const DEVICE_ID_KEY = "mechanicLedgerDeviceId";
-    const ONLINE_BACKUP_KEY = "mechanicLedgerOnlineBackupEnabled";
+    const ONLINE_BACKUP_KEY = "mechanicLedgerOnlineBackup";
 
     let state = { mechanics: [], transactions: [] };
     let searchQuery = "";
@@ -627,24 +602,12 @@
     let toastTimeoutId = null;
     let exportRangeMode = "all";
     let currentTheme = "dark";
-
+    let onlineBackupEnabled = true;
+    let currentUser = null;
     let deviceId = null;
-    let onlineBackupEnabled = false;
-    let firebaseUser = null;
     let confirmationResultGlobal = null;
-    let recaptchaVerifier = null;
-    let firstCloudSyncDone = false;
 
-    function ensureDeviceId() {
-      deviceId = localStorage.getItem(DEVICE_ID_KEY);
-      if (!deviceId) {
-        deviceId = "dev_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-        localStorage.setItem(DEVICE_ID_KEY, deviceId);
-      }
-    }
-    ensureDeviceId();
-
-    /* ------------ Helpers ------------- */
+    // ------- Helpers -------
     function formatAmount(amount) {
       if (isNaN(amount)) return "0.00";
       return amount.toLocaleString("en-IN", {
@@ -707,10 +670,27 @@
       render();
     }
 
-    function saveState() {
+    async function uploadBackupToCloud(reason) {
+      if (!currentUser || !onlineBackupEnabled) return;
+      try {
+        const backupDoc = {
+          state,
+          shopName: localStorage.getItem(SHOP_KEY) || "",
+          theme: localStorage.getItem(THEME_KEY) || "dark",
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastReason: reason || "auto"
+        };
+        await db.collection("backups").doc(currentUser.uid).set(backupDoc, { merge: true });
+        console.log("Cloud backup saved:", reason);
+      } catch (err) {
+        console.error("Cloud backup error:", err);
+      }
+    }
+
+    function saveState(reason = "local-change") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       render();
-      saveStateToFirestore();  // online backup if enabled
+      uploadBackupToCloud(reason);
     }
 
     function applyTheme() {
@@ -733,25 +713,75 @@
       applyTheme();
     }
 
-    function pad2(n) { return n.toString().padStart(2, "0"); }
-    function formatDateDDMMYYYY(d) {
-      const day = pad2(d.getDate());
-      const month = pad2(d.getMonth() + 1);
-      const year = d.getFullYear();
-      return `${day}-${month}-${year}`;
-    }
-    function formatTimeHHMMSS(d) {
-      const h = pad2(d.getHours());
-      const m = pad2(d.getMinutes());
-      const s = pad2(d.getSeconds());
-      return `${h}:${m}:${s}`;
+    function generateDeviceId() {
+      return (
+        "dev_" +
+        Date.now().toString(36) +
+        "_" +
+        Math.random().toString(36).slice(2)
+      );
     }
 
+    function ensureDeviceId() {
+      let id = localStorage.getItem(DEVICE_ID_KEY);
+      if (!id) {
+        id = generateDeviceId();
+        localStorage.setItem(DEVICE_ID_KEY, id);
+      }
+      deviceId = id;
+    }
+
+    async function syncUserDoc() {
+      if (!currentUser) return;
+      ensureDeviceId();
+      try {
+        await db.collection("users").doc(currentUser.uid).set(
+          {
+            phoneNumber: currentUser.phoneNumber || null,
+            latestDeviceId: deviceId,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          },
+          { merge: true }
+        );
+        console.log("User doc synced");
+      } catch (err) {
+        console.error("Error syncing user doc:", err);
+      }
+    }
+
+    function applyOnlineBackupLabel() {
+      const btn = document.getElementById("menuOnlineBackupToggle");
+      if (!btn) return;
+      btn.textContent = onlineBackupEnabled
+        ? "Online backup: ON"
+        : "Online backup: OFF";
+    }
+
+    function loadOnlineBackupSetting() {
+      const val = localStorage.getItem(ONLINE_BACKUP_KEY);
+      if (val === "off") onlineBackupEnabled = false;
+      else onlineBackupEnabled = true;
+      applyOnlineBackupLabel();
+    }
+
+    function toggleOnlineBackup() {
+      onlineBackupEnabled = !onlineBackupEnabled;
+      localStorage.setItem(ONLINE_BACKUP_KEY, onlineBackupEnabled ? "on" : "off");
+      applyOnlineBackupLabel();
+      if (onlineBackupEnabled) {
+        uploadBackupToCloud("toggle-on");
+        alert("Online backup ON hai. Har change ke baad cloud pe bhi copy save hogi.");
+      } else {
+        alert("Online backup OFF hai. Ab sirf local storage use hoga.");
+      }
+    }
+
+    // ------- Shop name -------
     function applyShopName() {
       const label = document.getElementById("shopNameLabel");
       if (!label) return;
       const name = localStorage.getItem(SHOP_KEY) || "";
-      label.textContent = name ? (name + " – ") : "";
+      label.textContent = name ? name + " – " : "";
     }
 
     function changeShopName() {
@@ -765,10 +795,10 @@
         localStorage.removeItem(SHOP_KEY);
       }
       applyShopName();
-      saveStateToFirestore();
+      uploadBackupToCloud("change-shop-name");
     }
 
-    /* ---------- File backup/restore ---------- */
+    // ------- Backup JSON file -------
     function backupData() {
       const backup = {
         version: "1",
@@ -777,9 +807,8 @@
         pin: localStorage.getItem(PIN_KEY) || null,
         theme: localStorage.getItem(THEME_KEY) || null,
         shopName: localStorage.getItem(SHOP_KEY) || "",
-        deviceId
+        deviceId: deviceId || null
       };
-
       const json = JSON.stringify(backup, null, 2);
       const blob = new Blob([json], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -815,9 +844,8 @@
             state = data.state;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
           }
-          if (data.pin !== undefined) {
-            if (data.pin === null) localStorage.removeItem(PIN_KEY);
-            else localStorage.setItem(PIN_KEY, data.pin);
+          if (data.pin !== undefined && data.pin !== null) {
+            localStorage.setItem(PIN_KEY, data.pin);
           }
           if (data.theme) {
             localStorage.setItem(THEME_KEY, data.theme);
@@ -836,84 +864,41 @@
       reader.readAsText(file);
     }
 
-    /* ---------- Forgot PIN via backup file ---------- */
-    function triggerForgotPinFile() {
-      const input = document.getElementById("forgotPinFileInput");
-      if (!input) return;
-      input.value = "";
-      input.click();
-    }
-
-    function handleForgotPinFile(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const currentShop = (localStorage.getItem(SHOP_KEY) || "").trim();
-      if (!currentShop) {
-        alert(
-          "Forgot PIN use karne ke liye pehle shop name set hona zaroori hai.\n\n" +
-          "Is app ko pehle use karte waqt shop name set karna chahiye tha. " +
-          "Agar aapne recently 'Reset data' kiya tha to ab naya PIN set karke dubara shuru karein."
-        );
+    // ------- ONLINE backup restore -------
+    async function restoreFromOnlineBackup() {
+      if (!currentUser) {
+        alert("Online backup restore ke liye pehle phone login zaroori hai.");
         return;
       }
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = JSON.parse(e.target.result);
-          if (!data || typeof data !== "object") {
-            alert("Ye backup file sahi nahi lagti.");
-            return;
-          }
-          const backupShop = (data.shopName || "").trim();
-
-          if (!backupShop) {
-            alert("Is backup file me shop name nahi mila. Forgot PIN ke liye valid backup chahiye.");
-            return;
-          }
-
-          if (backupShop.toLowerCase() !== currentShop.toLowerCase()) {
-            alert(
-              "Shop name match nahi hua.\n\n" +
-              "Is phone par: \"" + currentShop + "\"\n" +
-              "Backup file me: \"" + backupShop + "\"\n\n" +
-              "Wahi backup file use karo jo isi shop ke liye bana tha."
-            );
-            return;
-          }
-
-          const newPin1 = prompt(
-            "Backup verify ho gaya (shop name match).\n\n" +
-            "Naya 4-digit PIN daalo:"
-          );
-          if (newPin1 === null) return;
-          if (!/^\d{4}$/.test(newPin1.trim())) {
-            alert("PIN 4 digit ka number hona chahiye (0-9).");
-            return;
-          }
-          const newPin2 = prompt("Naya PIN dobara likho:", "");
-          if (newPin2 === null) return;
-          if (newPin1.trim() !== newPin2.trim()) {
-            alert("Dono PIN match nahi kar rahe.");
-            return;
-          }
-
-          localStorage.setItem(PIN_KEY, newPin1.trim());
-          alert("PIN reset ho gaya. Ab yahi naya PIN use hoga. Koi data delete nahi hua.");
-          const lockScreen = document.getElementById("lockScreen");
-          if (lockScreen) lockScreen.style.display = "none";
-          const cmd = document.getElementById("commandInput");
-          if (cmd) cmd.focus();
-        } catch (err) {
-          console.error(err);
-          alert("Backup file read karte waqt problem aayi. Dobara try karo.");
+      try {
+        const snap = await db.collection("backups").doc(currentUser.uid).get();
+        if (!snap.exists) {
+          alert("Cloud pe koi online backup nahi mila.");
+          return;
         }
-      };
-      reader.readAsText(file);
+        const data = snap.data();
+        if (!data.state) {
+          alert("Online backup me state data nahi mila.");
+          return;
+        }
+        state = data.state;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        if (data.theme) {
+          localStorage.setItem(THEME_KEY, data.theme);
+        }
+        if (data.shopName !== undefined) {
+          if (data.shopName) localStorage.setItem(SHOP_KEY, data.shopName);
+          else localStorage.removeItem(SHOP_KEY);
+        }
+        alert("Online backup se data restore ho gaya. Page reload ho raha hai.");
+        location.reload();
+      } catch (err) {
+        console.error(err);
+        alert("Online backup read karte waqt error aaya.");
+      }
     }
 
-    /* ---------- PIN lock ---------- */
+    // ------- PIN lock logic -------
     function initLockScreen() {
       const lockScreen = document.getElementById("lockScreen");
       if (!lockScreen) return;
@@ -934,7 +919,7 @@
         setTimeout(() => {
           const ip = document.getElementById("pinInput");
           if (ip) ip.focus();
-        }, 50);
+        }, 80);
       } else {
         pinSetupArea.style.display = "block";
         pinLoginArea.style.display = "none";
@@ -944,7 +929,7 @@
         setTimeout(() => {
           const ip = document.getElementById("pinNew");
           if (ip) ip.focus();
-        }, 50);
+        }, 80);
       }
 
       const saveBtn = document.getElementById("savePinBtn");
@@ -954,7 +939,6 @@
         saveBtn.onclick = () => {
           const p1 = document.getElementById("pinNew").value.trim();
           const p2 = document.getElementById("pinConfirm").value.trim();
-
           if (!/^\d{4}$/.test(p1)) {
             alert("PIN 4 digit ka number hona chahiye (sirf 0-9).");
             return;
@@ -1003,9 +987,7 @@
       }
 
       if (forgotBtn) {
-        forgotBtn.onclick = () => {
-          triggerForgotPinFile();
-        };
+        forgotBtn.onclick = handleForgotPinOtpFlow;
       }
     }
 
@@ -1035,7 +1017,155 @@
       alert("PIN change ho gaya.");
     }
 
-    /* ---------- Core data operations ---------- */
+    // ------- Forgot PIN via OTP (same phone) -------
+    let forgotConfirmationResult = null;
+
+    function setupRecaptchaIfNeeded() {
+      if (window.recaptchaVerifier) return;
+      try {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
+          size: "invisible"
+        });
+        window.recaptchaVerifier.render().catch(() => {});
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function handleForgotPinOtpFlow() {
+      if (!currentUser || !currentUser.phoneNumber) {
+        alert("Phone login expire ho gaya lagta hai. Page reload karke dobara login karo.");
+        return;
+      }
+      const phone = currentUser.phoneNumber;
+      if (!confirm(`We will send OTP to ${phone}.\n\nIss number ka OTP aane ke baad naya PIN set kar sakoge.`)) {
+        return;
+      }
+      setupRecaptchaIfNeeded();
+      firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
+        .then((conf) => {
+          forgotConfirmationResult = conf;
+          const otp = prompt("Forgot PIN ke liye aaya hua 6-digit OTP yahan daalo:");
+          if (!otp) return;
+          return forgotConfirmationResult.confirm(otp);
+        })
+        .then((cred) => {
+          if (!cred) return;
+          currentUser = cred.user;
+          const newPin1 = prompt("OTP verified ✅\n\nNaya 4-digit PIN likho:", "");
+          if (newPin1 === null) return;
+          if (!/^\d{4}$/.test(newPin1.trim())) {
+            alert("PIN 4 digit ka number hona chahiye (0-9).");
+            return;
+          }
+          const newPin2 = prompt("Naya PIN dobara likho:", "");
+          if (newPin2 === null) return;
+          if (newPin1.trim() !== newPin2.trim()) {
+            alert("Dono PIN match nahi kar rahe.");
+            return;
+          }
+          localStorage.setItem(PIN_KEY, newPin1.trim());
+          alert("PIN reset ho gaya. Ab naya PIN use karo.");
+          const lockScreen = document.getElementById("lockScreen");
+          if (lockScreen) lockScreen.style.display = "none";
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Forgot PIN OTP flow me error: " + (err.message || err));
+        });
+    }
+
+    // ------- PHONE AUTH (Firebase OTP) -------
+    function initPhoneAuthWatcher() {
+      firebase.auth().onAuthStateChanged(async (user) => {
+        currentUser = user || null;
+        const phoneScreen = document.getElementById("phoneLoginScreen");
+        const lockScreen = document.getElementById("lockScreen");
+
+        if (!user) {
+          // show phone login screen
+          if (phoneScreen) phoneScreen.style.display = "flex";
+          if (lockScreen) lockScreen.style.display = "none";
+          setupPhoneLoginUi();
+        } else {
+          // hide phone screen, show PIN lock
+          if (phoneScreen) phoneScreen.style.display = "none";
+          if (lockScreen) lockScreen.style.display = "flex";
+          ensureDeviceId();
+          await syncUserDoc();
+          initLockScreen();
+        }
+      });
+    }
+
+    function setupPhoneLoginUi() {
+      const phoneInput = document.getElementById("phoneInput");
+      const sendOtpBtn = document.getElementById("sendOtpBtn");
+      const otpArea = document.getElementById("otpArea");
+      const otpInput = document.getElementById("otpInput");
+      const verifyOtpBtn = document.getElementById("verifyOtpBtn");
+
+      setupRecaptchaIfNeeded();
+
+      if (sendOtpBtn) {
+        sendOtpBtn.onclick = function() {
+          let phone = (phoneInput.value || "").trim();
+          if (!phone) {
+            alert("Mobile number daalo.");
+            return;
+          }
+          if (!phone.startsWith("+")) {
+            phone = "+91" + phone;
+          }
+          sendOtpBtn.disabled = true;
+          firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
+            .then((conf) => {
+              confirmationResultGlobal = conf;
+              alert("OTP bhej diya gaya.");
+              if (otpArea) otpArea.style.display = "block";
+            })
+            .catch((error) => {
+              console.error(error);
+              alert("OTP bhejne me problem: " + (error.message || error));
+            })
+            .finally(() => {
+              sendOtpBtn.disabled = false;
+            });
+        };
+      }
+
+      if (verifyOtpBtn) {
+        verifyOtpBtn.onclick = function() {
+          const code = (otpInput.value || "").trim();
+          if (!code) {
+            alert("OTP daalo.");
+            return;
+          }
+          if (!confirmationResultGlobal) {
+            alert("Pehle OTP bhejo.");
+            return;
+          }
+          verifyOtpBtn.disabled = true;
+          confirmationResultGlobal.confirm(code)
+            .then(async (result) => {
+              currentUser = result.user;
+              ensureDeviceId();
+              await syncUserDoc();
+              alert("Login successful.");
+              // onAuthStateChanged will handle UI
+            })
+            .catch((error) => {
+              console.error(error);
+              alert("Galat OTP ya error: " + (error.message || error));
+            })
+            .finally(() => {
+              verifyOtpBtn.disabled = false;
+            });
+        };
+      }
+    }
+
+    // ------- CORE DATA OPS (mechanics & transactions) -------
     function addMechanic(name, openingBalance = 0, phone = "") {
       if (!name.trim()) return;
       const existing = state.mechanics.find(
@@ -1045,24 +1175,20 @@
         alert("Ye naam pehle se hai. Thoda alag naam rakho ya sirf command se kaam karo.");
         return;
       }
-
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
       const opening = Number(openingBalance) || 0;
-
       const mech = { id, name: name.trim(), balance: 0, phone: phone.trim() || "" };
       state.mechanics.push(mech);
-
       if (opening) {
         addTransaction(id, "ADD", opening, "Opening balance");
       } else {
-        saveState();
+        saveState("add-mechanic");
       }
     }
 
     function addTransaction(mechanicId, type, amount, note = "") {
       const mechanic = state.mechanics.find(m => m.id === mechanicId);
       if (!mechanic) return;
-
       if (type === "ADD") mechanic.balance += amount;
       else if (type === "DEDUCT") mechanic.balance -= amount;
 
@@ -1075,8 +1201,7 @@
         note,
         timestamp: new Date().toISOString()
       });
-
-      saveState();
+      saveState("add-transaction");
     }
 
     function undoLastTransaction() {
@@ -1086,14 +1211,12 @@
       }
       const last = state.transactions[0];
       const mech = state.mechanics.find(m => m.id === last.mechanicId);
-
       if (mech) {
         if (last.type === "ADD") mech.balance -= last.amount;
         else if (last.type === "DEDUCT") mech.balance += last.amount;
       }
-
       state.transactions.shift();
-      saveState();
+      saveState("undo-last");
       alert("Last transaction undo kar diya gaya.");
     }
 
@@ -1108,7 +1231,6 @@
         alert("Mechanic nahi mila (data mismatch).");
         return;
       }
-
       const newAmountStr = prompt(
         "Last transaction ka amount change karo:\n\n" +
         "Name: " + t.mechanicName + "\n" +
@@ -1123,29 +1245,19 @@
         return;
       }
       const newAmount = Number(newAmountStr);
-
-      const newNote = prompt(
-        "Description / Note edit karo (optional):",
-        t.note || ""
-      );
+      const newNote = prompt("Description / Note edit karo (optional):", t.note || "");
       if (newNote === null) return;
 
-      if (t.type === "ADD") {
-        mech.balance -= t.amount;
-      } else if (t.type === "DEDUCT") {
-        mech.balance += t.amount;
-      }
+      if (t.type === "ADD") mech.balance -= t.amount;
+      else if (t.type === "DEDUCT") mech.balance += t.amount;
 
       t.amount = newAmount;
       t.note = newNote.trim();
 
-      if (t.type === "ADD") {
-        mech.balance += newAmount;
-      } else if (t.type === "DEDUCT") {
-        mech.balance -= newAmount;
-      }
+      if (t.type === "ADD") mech.balance += newAmount;
+      else if (t.type === "DEDUCT") mech.balance -= newAmount;
 
-      saveState();
+      saveState("edit-last");
       alert("Last transaction update ho gaya.");
     }
 
@@ -1157,7 +1269,6 @@
       }
       const t = state.transactions[index];
       const mech = state.mechanics.find(m => m.id === t.mechanicId);
-
       const confirmMsg =
         "Ye transaction delete karna hai?\n\n" +
         "Name: " + (t.mechanicName || "") + "\n" +
@@ -1165,25 +1276,20 @@
         "Amount: ₹" + formatAmount(t.amount) + "\n" +
         "Note: " + (t.note || "-");
       if (!confirm(confirmMsg)) return;
-
       if (mech) {
-        if (t.type === "ADD") {
-          mech.balance -= t.amount;
-        } else if (t.type === "DEDUCT") {
-          mech.balance += t.amount;
-        }
+        if (t.type === "ADD") mech.balance -= t.amount;
+        else if (t.type === "DEDUCT") mech.balance += t.amount;
       }
-
       state.transactions.splice(index, 1);
-      saveState();
+      saveState("delete-txn");
       alert("Transaction delete ho gaya.");
     }
 
     function deleteMechanic(id) {
-      if (!confirm("Is mechanic ka pura data hata du (sirf local se)?")) return;
+      if (!confirm("Is mechanic ka pura data hata du (sirf local + cloud backup se)?")) return;
       state.mechanics = state.mechanics.filter(m => m.id !== id);
       state.transactions = state.transactions.filter(t => t.mechanicId !== id);
-      saveState();
+      saveState("delete-mechanic");
     }
 
     function editMechanic(mechId) {
@@ -1192,7 +1298,6 @@
         alert("Mechanic nahi mila.");
         return;
       }
-
       const newName = prompt("Mechanic ka naam change karo:", mech.name);
       if (newName === null) return;
       const trimmedName = newName.trim();
@@ -1200,7 +1305,6 @@
         alert("Naam khali nahi ho sakta.");
         return;
       }
-
       const newPhone = prompt("Phone number (optional):", mech.phone || "");
       if (newPhone === null) return;
 
@@ -1216,7 +1320,6 @@
       const openingTxns = mechTxnsAll.filter(
         t => t.type === "ADD" && t.note === "Opening balance"
       );
-
       if (mechTxnsAll.length === 1 && openingTxns.length === 1) {
         const openingTxn = openingTxns[0];
         const currentOpening = openingTxn.amount;
@@ -1226,7 +1329,6 @@
           "Naya opening balance likho (ya blank chhod do agar same rakhna hai):",
           currentOpening
         );
-
         if (newOpeningStr !== null) {
           const trimmed = String(newOpeningStr).trim();
           if (trimmed !== "") {
@@ -1246,17 +1348,13 @@
 
       mech.name = trimmedName;
       mech.phone = newPhone.trim();
-
       state.transactions.forEach(t => {
-        if (t.mechanicId === mech.id) {
-          t.mechanicName = trimmedName;
-        }
+        if (t.mechanicId === mech.id) t.mechanicName = trimmedName;
       });
-
-      saveState();
+      saveState("edit-mechanic");
     }
 
-    /* ---------- Rendering ---------- */
+    // ------- Rendering (same as your working logic) -------
     const mechanicTableBody = document.getElementById("mechanicTableBody");
     const logEl = document.getElementById("log");
     const totalSummaryEl = document.getElementById("totalSummary");
@@ -1277,28 +1375,22 @@
       opt.value = "";
       opt.textContent = "Select mechanic";
       sel.appendChild(opt);
-
       state.mechanics.forEach(m => {
         const o = document.createElement("option");
         o.value = m.id;
         o.textContent = m.name;
         sel.appendChild(o);
       });
-
-      if (prev && state.mechanics.some(m => m.id === prev)) {
-        sel.value = prev;
-      }
+      if (prev && state.mechanics.some(m => m.id === prev)) sel.value = prev;
     }
 
     function renderMechanics() {
       mechanicTableBody.innerHTML = "";
       let list = state.mechanics;
-
       if (mechanicSearchQuery.trim()) {
         const q = mechanicSearchQuery.toLowerCase();
         list = list.filter(m => m.name.toLowerCase().includes(q));
       }
-
       if (list.length === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
@@ -1311,16 +1403,12 @@
         list.forEach(m => {
           const tr = document.createElement("tr");
           const nameTd = document.createElement("td");
-          nameTd.innerHTML =
-            m.name +
-            (m.phone ? `<br><span class="muted">📞 ${m.phone}</span>` : "");
-
+          nameTd.innerHTML = m.name + (m.phone ? `<br><span class="muted">📞 ${m.phone}</span>` : "");
           const balTd = document.createElement("td");
           const balSpan = document.createElement("span");
           balSpan.className = "pill " + (m.balance >= 0 ? "pill-pos" : "pill-neg");
           balSpan.textContent = formatAmount(m.balance);
           balTd.appendChild(balSpan);
-
           const actionsTd = document.createElement("td");
 
           const btnStatement = document.createElement("button");
@@ -1343,7 +1431,7 @@
           btnAdd.className = "secondary";
           btnAdd.style.marginLeft = "6px";
           btnAdd.onclick = () => {
-            const amountStr = prompt(`Kitna bhadao karna hai ${m.name} ke naam? (number only)`);
+            const amountStr = prompt(`Kitna bhadao karna hai ${m.name} ke naam?`);
             if (amountStr && !isNaN(amountStr)) {
               addTransaction(m.id, "ADD", Number(amountStr), "Manual add");
             }
@@ -1354,7 +1442,7 @@
           btnDeduct.className = "secondary";
           btnDeduct.style.marginLeft = "6px";
           btnDeduct.onclick = () => {
-            const amountStr = prompt(`Kitna ghataana hai ${m.name} ke naam se? (number only)`);
+            const amountStr = prompt(`Kitna ghataana hai ${m.name} ke naam se?`);
             if (amountStr && !isNaN(amountStr)) {
               addTransaction(m.id, "DEDUCT", Number(amountStr), "Manual deduct");
             }
@@ -1378,32 +1466,26 @@
           mechanicTableBody.appendChild(tr);
         });
       }
-
       const total = state.mechanics.reduce((sum, m) => sum + m.balance, 0);
       const count = state.mechanics.length;
       totalSummaryEl.textContent =
         "Total across all mechanics: ₹" + formatAmount(total) +
         " | Total mechanics: " + count;
-
       refreshQuickEntryMechanics();
     }
 
     function renderTransactions() {
       logEl.innerHTML = "";
       let txns = state.transactions;
-
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        txns = txns.filter(t => {
-          return (
-            t.mechanicName.toLowerCase().includes(q) ||
-            (t.note && t.note.toLowerCase().includes(q)) ||
-            t.type.toLowerCase().includes(q) ||
-            String(t.amount).includes(q)
-          );
-        });
+        txns = txns.filter(t =>
+          t.mechanicName.toLowerCase().includes(q) ||
+          (t.note && t.note.toLowerCase().includes(q)) ||
+          t.type.toLowerCase().includes(q) ||
+          String(t.amount).includes(q)
+        );
       }
-
       if (txns.length === 0) {
         const div = document.createElement("div");
         div.className = "muted";
@@ -1420,14 +1502,12 @@
             `${t.type === "ADD" ? "to" : "from"} <b>${t.mechanicName}</b>` +
             (t.note ? ` — ${t.note}` : "") +
             `<br><span class="muted">${date.toLocaleString()}</span>`;
-
           const delBtn = document.createElement("button");
           delBtn.textContent = "🗑 Delete";
           delBtn.className = "secondary";
           delBtn.style.marginTop = "4px";
           delBtn.style.fontSize = "0.7rem";
           delBtn.onclick = () => deleteTransaction(t.id);
-
           div.appendChild(delBtn);
           logEl.appendChild(div);
         });
@@ -1437,37 +1517,23 @@
     function renderTodaySummary() {
       const summaryEl = document.getElementById("todaySummary");
       if (!summaryEl) return;
-
       if (!state.transactions.length) {
         summaryEl.textContent = "No transactions yet today.";
         return;
       }
-
       const now = new Date();
-      const y = now.getFullYear();
-      const m = now.getMonth();
-      const d = now.getDate();
-
-      let addTotal = 0;
-      let deductTotal = 0;
-
+      let addTotal = 0, deductTotal = 0;
       state.transactions.forEach(t => {
         const dt = new Date(t.timestamp);
-        if (
-          dt.getFullYear() === y &&
-          dt.getMonth() === m &&
-          dt.getDate() === d
-        ) {
+        if (dt.toDateString() === now.toDateString()) {
           if (t.type === "ADD") addTotal += t.amount;
           else if (t.type === "DEDUCT") deductTotal += t.amount;
         }
       });
-
       if (addTotal === 0 && deductTotal === 0) {
         summaryEl.textContent = "No transactions yet today.";
         return;
       }
-
       const net = addTotal - deductTotal;
       summaryEl.innerHTML =
         `Today – ` +
@@ -1481,33 +1547,26 @@
       const miniBody = document.getElementById("miniBody");
       const miniTitle = document.getElementById("miniTitle");
       const miniTotals = document.getElementById("miniTotals");
-
       if (!currentStatementMechanicId) {
         card.style.display = "none";
         return;
       }
-
       const mech = state.mechanics.find(m => m.id === currentStatementMechanicId);
       if (!mech) {
         card.style.display = "none";
         return;
       }
-
       const txns = state.transactions.filter(t => t.mechanicId === mech.id);
       miniTitle.textContent = `Statement – ${mech.name}`;
-
-      let totalAdd = 0;
-      let totalDeduct = 0;
+      let totalAdd = 0, totalDeduct = 0;
       txns.forEach(t => {
         if (t.type === "ADD") totalAdd += t.amount;
         else if (t.type === "DEDUCT") totalDeduct += t.amount;
       });
-
       miniTotals.innerHTML =
         `<span class="tag-add">ADD: ₹${formatAmount(totalAdd)}</span> &nbsp; ` +
         `<span class="tag-deduct">DEDUCT: ₹${formatAmount(totalDeduct)}</span> &nbsp; ` +
         `<span>Net: ₹${formatAmount(mech.balance)}</span>`;
-
       miniBody.innerHTML = "";
       if (txns.length === 0) {
         const div = document.createElement("div");
@@ -1529,334 +1588,14 @@
       }
     }
 
-    /* ---------- Voice number parsing ---------- */
-    function wordsToNumber(text) {
-      text = text.toLowerCase().replace(/-/g, " ");
-      const tokens = text.split(/\s+/).filter(Boolean);
-      if (tokens.length === 0) return NaN;
-
-      const englishVal = parseEnglishNumberWords(tokens);
-      if (!isNaN(englishVal) && englishVal > 0) return englishVal;
-
-      const hindiVal = parseHindiNumberWords(tokens);
-      if (!isNaN(hindiVal) && hindiVal > 0) return hindiVal;
-
-      return NaN;
+    // ------- CSV export helpers -------
+    function pad2(n) { return n.toString().padStart(2, "0"); }
+    function formatDateDDMMYYYY(d) {
+      return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
     }
-
-    function parseEnglishNumberWords(tokens) {
-      const units = {
-        "one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,
-        "ten":10,"eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,
-        "sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19
-      };
-      const tens = {
-        "twenty":20,"thirty":30,"forty":40,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90
-      };
-
-      let total = 0;
-      let current = 0;
-      let found = false;
-
-      for (const tok of tokens) {
-        if (units[tok] != null) {
-          current += units[tok];
-          found = true;
-        } else if (tens[tok] != null) {
-          current += tens[tok];
-          found = true;
-        } else if (tok === "hundred") {
-          if (current === 0) current = 1;
-          current = current * 100;
-          found = true;
-        } else if (tok === "thousand") {
-          if (current === 0) current = 1;
-          total += current * 1000;
-          current = 0;
-          found = true;
-        }
-      }
-
-      if (!found) return NaN;
-      return total + current;
+    function formatTimeHHMMSS(d) {
+      return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
     }
-
-    function parseHindiNumberWords(tokens) {
-      const units = {
-        "ek":1,"ik":1,
-        "do":2,
-        "teen":3,"tin":3,
-        "char":4,"chaar":4,
-        "panch":5,"paanch":5,
-        "chhe":6,"che":6,"chhah":6,
-        "saat":7,"sath":7,
-        "aath":8,"ath":8,
-        "nau":9,"no":9,
-        "das":10
-      };
-
-      let total = 0;
-      let current = 0;
-      let found = false;
-
-      for (let i = 0; i < tokens.length; i++) {
-        const tok = tokens[i];
-
-        if (["dedh","ded","derd"].includes(tok) && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
-          total += 150;
-          found = true;
-          i++;
-          continue;
-        }
-
-        if ((tok === "dhai" || tok === "dhaii" || tok === "dhaiya") && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
-          total += 250;
-          found = true;
-          i++;
-          continue;
-        }
-
-        if (units[tok] != null) {
-          current += units[tok];
-          found = true;
-          continue;
-        }
-
-        if (tok === "sau" || tok === "so") {
-          if (current === 0) current = 1;
-          current = current * 100;
-          found = true;
-          continue;
-        }
-
-        if (tok === "hazar" || tok === "hazaar") {
-          if (current === 0) current = 1;
-          total += current * 1000;
-          current = 0;
-          found = true;
-          continue;
-        }
-      }
-
-      if (!found) return NaN;
-      return total + current;
-    }
-
-    function extractAmount(text) {
-      const numMatch = text.match(/(\d+(\.\d+)?)/);
-      if (numMatch) return Number(numMatch[1]);
-
-      const wordVal = wordsToNumber(text);
-      if (!isNaN(wordVal)) return wordVal;
-
-      return NaN;
-    }
-
-    /* ---------- Command + Quick Entry ---------- */
-    function handleCommand(text) {
-      if (!text) return false;
-      const original = text;
-      text = text.toLowerCase().trim();
-
-      const addWords = [
-        "add","add karo","add kardo",
-        "plus","plus karo","plus kardo",
-        "ka samaan liya","samaan liya","ka saman liya","saman liya",
-        "ka maal liya","maal liya",
-        "credit","credit karo",
-        "increase","increase karo",
-        "jodo","jod do",
-        "bada do","badao","badhao","bhadao",
-        "account me jod do"
-      ];
-
-      const deductWords = [
-        "deduct","deduct karo","deduct kardo",
-        "less","less karo","less kardo",
-        "minus","minus karo","minus kardo",
-        "debit","debit karo",
-        "samaan wapis kiya","saman wapis kiya","ne saman wapis kiya",
-        "ghatao","ghata do","ghata",
-        "kato","katto","kaatdo","katdo",
-        "kam karo","kam kardo",
-        "return kiya","return mila",
-        "paisa diya","paisa mila","cash mila",
-        "reduce"
-      ];
-
-      let type = null;
-      if (addWords.some(w => text.includes(w))) type = "ADD";
-      if (deductWords.some(w => text.includes(w))) type = "DEDUCT";
-
-      const amount = extractAmount(text);
-
-      let namePart = "";
-      const tokens = text.split(/\s+/);
-      const keIndex = tokens.indexOf("ke");
-      if (!namePart && keIndex > 0) {
-        namePart = tokens.slice(0, keIndex).join(" ").trim();
-      }
-      if (!namePart) {
-        const noise = new Set(["ke","ki","ka","me","mein","rs","rs.","rupay","rupees","amount"]);
-        const allTypeWords = new Set([...addWords, ...deductWords]);
-        const numWords = new Set([
-          "hundred","thousand","sau","so","hazar","hazaar","dedh","ded","dhai",
-          "ek","ik","do","teen","tin","char","chaar","panch","paanch","chhe","che","chhah",
-          "saat","sath","aath","ath","nau","no","das",
-          "one","two","three","four","five","six","seven","eight","nine","ten"
-        ]);
-        const nameTokens = tokens.filter(tok => {
-          if (!tok) return false;
-          if (/\d/.test(tok)) return false;
-          if (noise.has(tok)) return false;
-          if (allTypeWords.has(tok)) return false;
-          if (numWords.has(tok)) return false;
-          return true;
-        });
-        namePart = nameTokens.join(" ").trim();
-      }
-
-      if (!type || isNaN(amount) || !namePart) {
-        alert(
-          'Samajh nahi aaya: "' + original + '".\n\n' +
-          'Example:\n' +
-          '- rahul ke 5000 bhadao\n' +
-          '- rahul ke hundred bhadao\n' +
-          '- rahul ke sau bhadao\n' +
-          '- rahul ke dedh sau bhadao\n' +
-          '- rahul ke 2000 ghata do'
-        );
-        return false;
-      }
-
-      const mechanic = state.mechanics.find(m =>
-        m.name.toLowerCase() === namePart.toLowerCase()
-      );
-
-      if (!mechanic) {
-        alert(
-          `"${namePart}" ka naam list me nahi mila.\n` +
-          `Pehle neeche "Add Mechanic" me iss naam se entry banao, phir command do.`
-        );
-        return false;
-      }
-
-      const descInput = document.getElementById("descriptionInput");
-      const extraNote = descInput.value.trim();
-      const finalNote = extraNote
-        ? extraNote + " | Command: " + original
-        : "Command: " + original;
-
-      const previewMsg =
-        `Are you sure?\n\n` +
-        `Name: ${mechanic.name}\n` +
-        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
-        `Amount: ₹${formatAmount(amount)}\n` +
-        `Note: ${extraNote || "-"}\n`;
-
-      if (!confirm(previewMsg)) return false;
-
-      addTransaction(mechanic.id, type, amount, finalNote);
-      showToast(mechanic.name, type, amount, extraNote || original);
-      return true;
-    }
-
-    function handleQuickEntry() {
-      const mechSel = document.getElementById("quickMechanicSelect");
-      const amtInput = document.getElementById("quickAmountInput");
-      const actionSel = document.getElementById("quickActionSelect");
-      const descInput = document.getElementById("descriptionInput");
-
-      if (!mechSel || !amtInput || !actionSel) return false;
-
-      const mechId = mechSel.value;
-      const amountStr = amtInput.value.trim();
-      const type = actionSel.value || "ADD";
-
-      if (!mechId || !amountStr) return false;
-
-      if (isNaN(amountStr)) {
-        alert("Amount number me likho (e.g. 500, 1200.50).");
-        return false;
-      }
-
-      const amount = Number(amountStr);
-      if (!amount || amount <= 0) {
-        alert("Amount 0 se bada hona chahiye.");
-        return false;
-      }
-
-      const mechanic = state.mechanics.find(m => m.id === mechId);
-      if (!mechanic) {
-        alert("Mechanic list me nahi mila.");
-        return false;
-      }
-
-      const extraNote = descInput.value.trim();
-      const finalNote = extraNote
-        ? extraNote + " | Quick entry"
-        : "Quick entry";
-
-      const previewMsg =
-        `Are you sure?\n\n` +
-        `Name: ${mechanic.name}\n` +
-        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
-        `Amount: ₹${formatAmount(amount)}\n` +
-        `Note: ${extraNote || "-"}\n`;
-
-              if (!confirm(previewMsg)) return false;
-
-      addTransaction(mechanic.id, type, amount, finalNote);
-      showToast(mechanic.name, type, amount, extraNote || original);
-      return true;
-    }
-
-    function handleQuickEntry() {
-      const mechSel = document.getElementById("quickMechanicSelect");
-      const amtInput = document.getElementById("quickAmountInput");
-      const actionSel = document.getElementById("quickActionSelect");
-      const descInput = document.getElementById("descriptionInput");
-
-      if (!mechSel || !amtInput || !actionSel) return false;
-
-      const mechId = mechSel.value;
-      const amountStr = amtInput.value.trim();
-      const type = actionSel.value || "ADD";
-
-      if (!mechId || !amountStr) return false;
-
-      if (isNaN(amountStr)) {
-        alert("Amount number me likho (e.g. 500, 1200.50).");
-        return false;
-      }
-
-      const amount = Number(amountStr);
-      if (!amount || amount <= 0) {
-        alert("Amount 0 se bada hona chahiye.");
-        return false;
-      }
-
-      const mechanic = state.mechanics.find(m => m.id === mechId);
-      if (!mechanic) {
-        alert("Mechanic list me nahi mila.");
-        return false;
-      }
-
-      const extraNote = descInput.value.trim();
-      const finalNote = extraNote
-        ? extraNote + " | Quick entry"
-        : "Quick entry";
-
-      if (!confirm(previewMsg)) {
-        return false;
-      }
-
-      addTransaction(mechanic.id, type, amount, finalNote);
-      showToast(mechanic.name, type, amount, extraNote || "Quick entry");
-      return true;
-    }
-
-    /* ---------- CSV helpers & export ---------- */
     function toCSVValue(value) {
       if (value == null) return "";
       const s = String(value);
@@ -1865,12 +1604,8 @@
       }
       return s;
     }
-
     function downloadCSV(filename, rows) {
-      const csvContent = rows
-        .map(row => row.map(toCSVValue).join(","))
-        .join("\r\n");
-
+      const csvContent = rows.map(row => row.map(toCSVValue).join(",")).join("\r\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1881,50 +1616,19 @@
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }
-
-    function exportSingleMechanicCSV(mechanicId) {
-      const mech = state.mechanics.find(m => m.id === mechanicId);
-      if (!mech) {
-        alert("Mechanic nahi mila.");
-        return;
-      }
-      const txns = state.transactions
-        .slice()
-        .reverse()
-        .filter(t => t.mechanicId === mechanicId);
-
+    function exportMechanicsCSV() {
       const rows = [];
-      rows.push(["Statement for", mech.name]);
-      rows.push(["Phone", mech.phone || ""]);
-      rows.push(["Generated at", new Date().toISOString()]);
-      rows.push([]);
-      rows.push(["id", "date", "time", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
-
-      txns.forEach(t => {
-        const dt = new Date(t.timestamp);
-        rows.push([
-          t.id,
-          formatDateDDMMYYYY(dt),
-          formatTimeHHMMSS(dt),
-          t.mechanicId,
-          t.mechanicName,
-          t.type,
-          t.amount,
-          t.note
-        ]);
+      rows.push(["id", "name", "phone", "current_balance"]);
+      state.mechanics.forEach(m => {
+        rows.push([m.id, m.name, m.phone || "", m.balance]);
       });
-
-      downloadCSV(`statement_${mech.name.replace(/\s+/g, "_")}.csv`, rows);
+      downloadCSV("mechanics.csv", rows);
     }
-
     function getSelectedDateRange() {
       const now = new Date();
-      let start = null;
-      let end = null;
-
-      if (exportRangeMode === "all") {
-        return { start: null, end: null };
-      } else if (exportRangeMode === "1d") {
+      let start = null, end = null;
+      if (exportRangeMode === "all") return { start: null, end: null };
+      if (exportRangeMode === "1d") {
         end = now;
         start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       } else if (exportRangeMode === "7d") {
@@ -1954,23 +1658,11 @@
         end = new Date(endInput);
         end.setHours(23, 59, 59, 999);
       }
-
       return { start, end };
     }
-
-    function exportMechanicsCSV() {
-      const rows = [];
-      rows.push(["id", "name", "phone", "current_balance"]);
-      state.mechanics.forEach(m => {
-        rows.push([m.id, m.name, m.phone || "", m.balance]);
-      });
-      downloadCSV("mechanics.csv", rows);
-    }
-
     function exportTransactionsCSV() {
       const { start, end, invalid } = getSelectedDateRange();
       if (invalid) return;
-
       let txns = state.transactions.slice().reverse();
       if (start && end) {
         txns = txns.filter(t => {
@@ -1978,10 +1670,8 @@
           return d >= start && d <= end;
         });
       }
-
       const rows = [];
       rows.push(["id", "date", "time", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
-
       txns.forEach(t => {
         const dt = new Date(t.timestamp);
         rows.push([
@@ -1995,219 +1685,227 @@
           t.note
         ]);
       });
-
       downloadCSV("transactions.csv", rows);
     }
 
-    /* ---------- Online backup: Firestore ---------- */
-    function updateOnlineStatusUI() {
-      const el = document.getElementById("onlineStatus");
-      if (!el) return;
-
-      if (firebaseUser && onlineBackupEnabled) {
-        const phone = firebaseUser.phoneNumber || "";
-        el.textContent =
-          "Cloud backup: ON – " +
-          (phone ? phone : "phone linked") +
-          ". Har save par is device ka data cloud me bhi save ho raha hai.";
-      } else if (firebaseUser && !onlineBackupEnabled) {
-        el.textContent = "Cloud backup: OFF (login hua hai, par backup toggle off hai).";
-      } else {
-        el.textContent = "Cloud backup: OFF (sirf is device pe local data).";
+    // ------- Number words & command parsing (same as before) -------
+    function wordsToNumber(text) {
+      text = text.toLowerCase().replace(/-/g, " ");
+      const tokens = text.split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return NaN;
+      const englishVal = parseEnglishNumberWords(tokens);
+      if (!isNaN(englishVal) && englishVal > 0) return englishVal;
+      const hindiVal = parseHindiNumberWords(tokens);
+      if (!isNaN(hindiVal) && hindiVal > 0) return hindiVal;
+      return NaN;
+    }
+    function parseEnglishNumberWords(tokens) {
+      const units = {
+        "one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,
+        "ten":10,"eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,
+        "sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19
+      };
+      const tens = {
+        "twenty":20,"thirty":30,"forty":30+10,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90
+      };
+      let total = 0, current = 0, found = false;
+      for (const tok of tokens) {
+        if (units[tok] != null) { current += units[tok]; found = true; }
+        else if (tens[tok] != null) { current += tens[tok]; found = true; }
+        else if (tok === "hundred") { if (current === 0) current = 1; current *= 100; found = true; }
+        else if (tok === "thousand") { if (current === 0) current = 1; total += current * 1000; current = 0; found = true; }
       }
+      if (!found) return NaN;
+      return total + current;
+    }
+    function parseHindiNumberWords(tokens) {
+      const units = {
+        "ek":1,"ik":1,"do":2,"teen":3,"tin":3,
+        "char":4,"chaar":4,"panch":5,"paanch":5,
+        "chhe":6,"che":6,"chhah":6,
+        "saat":7,"sath":7,"aath":8,"ath":8,
+        "nau":9,"no":9,"das":10
+      };
+      let total = 0, current = 0, found = false;
+      for (let i = 0; i < tokens.length; i++) {
+        const tok = tokens[i];
+        if (["dedh","ded","derd"].includes(tok) && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
+          total += 150; found = true; i++; continue;
+        }
+        if ((tok === "dhai" || tok === "dhaii" || tok === "dhaiya") && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
+          total += 250; found = true; i++; continue;
+        }
+        if (units[tok] != null) { current += units[tok]; found = true; continue; }
+        if (tok === "sau" || tok === "so") {
+          if (current === 0) current = 1;
+          current *= 100; found = true; continue;
+        }
+        if (tok === "hazar" || tok === "hazaar") {
+          if (current === 0) current = 1;
+          total += current * 1000; current = 0; found = true; continue;
+        }
+      }
+      if (!found) return NaN;
+      return total + current;
+    }
+    function extractAmount(text) {
+      const numMatch = text.match(/(\d+(\.\d+)?)/);
+      if (numMatch) return Number(numMatch[1]);
+      const wordVal = wordsToNumber(text);
+      if (!isNaN(wordVal)) return wordVal;
+      return NaN;
+    }
+    function handleCommand(text) {
+      if (!text) return false;
+      const original = text;
+      text = text.toLowerCase().trim();
+      const addWords = [
+        "add","add karo","add kardo","plus","plus karo","plus kardo",
+        "ka samaan liya","samaan liya","ka saman liya","saman liya",
+        "ka maal liya","maal liya","credit","credit karo",
+        "increase","increase karo","jodo","jod do",
+        "bada do","badao","badhao","bhadao","account me jod do"
+      ];
+      const deductWords = [
+        "deduct","deduct karo","deduct kardo","less","less karo","less kardo",
+        "minus","minus karo","minus kardo","debit","debit karo",
+        "samaan wapis kiya","saman wapis kiya","ne saman wapis kiya",
+        "ghatao","ghata do","ghata","kato","katto","kaatdo","katdo",
+        "kam karo","kam kardo","return kiya","return mila",
+        "paisa diya","paisa mila","cash mila","reduce"
+      ];
+      let type = null;
+      if (addWords.some(w => text.includes(w))) type = "ADD";
+      if (deductWords.some(w => text.includes(w))) type = "DEDUCT";
+      const amount = extractAmount(text);
+      let namePart = "";
+      const tokens = text.split(/\s+/);
+      const keIndex = tokens.indexOf("ke");
+      if (!namePart && keIndex > 0) {
+        namePart = tokens.slice(0, keIndex).join(" ").trim();
+      }
+      if (!namePart) {
+        const noise = new Set(["ke","ki","ka","me","mein","rs","rs.","rupay","rupees","amount"]);
+        const allTypeWords = new Set([...addWords, ...deductWords]);
+        const numWords = new Set([
+          "hundred","thousand","sau","so","hazar","hazaar","dedh","ded","dhai",
+          "ek","ik","do","teen","tin","char","chaar","panch","paanch","chhe","che","chhah",
+          "saat","sath","aath","ath","nau","no","das",
+          "one","two","three","four","five","six","seven","eight","nine","ten"
+        ]);
+        const nameTokens = tokens.filter(tok => {
+          if (!tok) return false;
+          if (/\d/.test(tok)) return false;
+          if (noise.has(tok)) return false;
+          if (allTypeWords.has(tok)) return false;
+          if (numWords.has(tok)) return false;
+          return true;
+        });
+        namePart = nameTokens.join(" ").trim();
+      }
+      if (!type || isNaN(amount) || !namePart) {
+        alert(
+          'Samajh nahi aaya: "' + original + '".\n\n' +
+          'Example:\n' +
+          '- rahul ke 5000 bhadao\n' +
+          '- rahul ke hundred bhadao\n' +
+          '- rahul ke sau bhadao\n' +
+          '- rahul ke dedh sau bhadao\n' +
+          '- rahul ke 2000 ghata do'
+        );
+        return false;
+      }
+      const mechanic = state.mechanics.find(
+        m => m.name.toLowerCase() === namePart.toLowerCase()
+      );
+      if (!mechanic) {
+        alert(
+          `"${namePart}" ka naam list me nahi mila.\n` +
+          `Pehle neeche "Add Mechanic" me iss naam se entry banao, phir command do.`
+        );
+        return false;
+      }
+      const descInput = document.getElementById("descriptionInput");
+      const extraNote = descInput.value.trim();
+      const finalNote = extraNote
+        ? extraNote + " | Command: " + original
+        : "Command: " + original;
+      const previewMsg =
+        `Are you sure?\n\n` +
+        `Name: ${mechanic.name}\n` +
+        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
+        `Amount: ₹${formatAmount(amount)}\n` +
+        `Note: ${extraNote || "-"}\n`;
+      if (!confirm(previewMsg)) return false;
+      addTransaction(mechanic.id, type, amount, finalNote);
+      showToast(mechanic.name, type, amount, extraNote || original);
+      return true;
     }
 
-    function saveStateToFirestore() {
-      if (!firebaseUser || !onlineBackupEnabled) return;
+    function handleQuickEntry() {
+      const mechSel = document.getElementById("quickMechanicSelect");
+      const amtInput = document.getElementById("quickAmountInput");
+      const actionSel = document.getElementById("quickActionSelect");
+      const descInput = document.getElementById("descriptionInput");
+      if (!mechSel || !amtInput || !actionSel) return false;
+      const mechId = mechSel.value;
+      const amountStr = amtInput.value.trim();
+      const type = actionSel.value || "ADD";
+      if (!mechId || !amountStr) return false;
+      if (isNaN(amountStr)) {
+        alert("Amount number me likho (e.g. 500, 1200.50).");
+        return false;
+      }
+      const amount = Number(amountStr);
+      if (!amount || amount <= 0) {
+        alert("Amount 0 se bada hona chahiye.");
+        return false;
+      }
+      const mechanic = state.mechanics.find(m => m.id === mechId);
+      if (!mechanic) {
+        alert("Mechanic list me nahi mila.");
+        return false;
+      }
+      const extraNote = descInput.value.trim();
+      const finalNote = extraNote
+        ? extraNote + " | Quick entry"
+        : "Quick entry";
+      const previewMsg =
+        `Are you sure?\n\n` +
+        `Name: ${mechanic.name}\n` +
+        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
+        `Amount: ₹${formatAmount(amount)}\n` +
+        `Note: ${extraNote || "-"}\n`;
+      if (!confirm(previewMsg)) return false;
+      addTransaction(mechanic.id, type, amount, finalNote);
+      showToast(mechanic.name, type, amount, extraNote || "Quick entry");
+      return true;
+    }
+
+    // ------- RESET EVERYTHING -------
+    async function resetDataAll() {
+      if (!confirm("Saara local data, PIN aur phone login clear kar du? (Mechanics + Transactions + PIN + login sab clear)")) return;
+      state = { mechanics: [], transactions: [] };
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(PIN_KEY);
+      localStorage.removeItem(GBOARD_TIP_KEY);
+      localStorage.removeItem(SHOP_KEY);
+      localStorage.removeItem(THEME_KEY);
+      localStorage.removeItem(DEVICE_ID_KEY);
+      localStorage.removeItem(ONLINE_BACKUP_KEY);
       try {
-        const userId = firebaseUser.uid;
-        const ref = db
-          .collection("users")
-          .doc(userId)
-          .collection("devices")
-          .doc(deviceId);
-
-        const payload = {
-          deviceId,
-          phoneNumber: firebaseUser.phoneNumber || null,
-          shopName: localStorage.getItem(SHOP_KEY) || "",
-          theme: localStorage.getItem(THEME_KEY) || null,
-          pin: localStorage.getItem(PIN_KEY) || null,
-          state,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        ref.set(payload, { merge: true }).catch(err => {
-          console.error("saveStateToFirestore error:", err);
-        });
+        await firebase.auth().signOut();
       } catch (e) {
-        console.error("saveStateToFirestore outer error:", e);
+        console.error("signOut error:", e);
       }
+      alert("Reset complete. Page reload ho raha hai.");
+      location.reload();
     }
 
-    async function restoreFromCloud() {
-      if (!firebaseUser) {
-        alert("Pehle 'Online backup (phone login)' se login karo, fir cloud se restore kar sakte ho.");
-        return;
-      }
-      try {
-        const userId = firebaseUser.uid;
-        const ref = db
-          .collection("users")
-          .doc(userId)
-          .collection("devices")
-          .doc(deviceId);
-
-        const snap = await ref.get();
-        if (!snap.exists) {
-          alert("Cloud me is device ke liye koi backup nahi mila.");
-          return;
-        }
-        const data = snap.data();
-        if (!data || !data.state) {
-          alert("Cloud backup data sahi nahi mila.");
-          return;
-        }
-
-        if (!confirm("Cloud backup se restore karne par is device ka current data overwrite ho jayega. Continue?")) {
-          return;
-        }
-
-        state = data.state;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
-        if (data.pin !== undefined) {
-          if (data.pin === null) localStorage.removeItem(PIN_KEY);
-          else localStorage.setItem(PIN_KEY, data.pin);
-        }
-        if (data.theme) {
-          localStorage.setItem(THEME_KEY, data.theme);
-        }
-        if (data.shopName !== undefined) {
-          if (data.shopName) localStorage.setItem(SHOP_KEY, data.shopName);
-          else localStorage.removeItem(SHOP_KEY);
-          applyShopName();
-        }
-
-        alert("Cloud backup se restore ho gaya.");
-        render();
-      } catch (err) {
-        console.error(err);
-        alert("Cloud restore me problem aayi. Thodi der baad try karo.");
-      }
-    }
-
-    /* ---------- Phone auth popup (online backup login) ---------- */
-    function openPhoneAuthPopup() {
-      const popup = document.getElementById("phoneAuthPopup");
-      if (!popup) return;
-      popup.style.display = "flex";
-
-      const otpArea = document.getElementById("otpArea");
-      if (otpArea) otpArea.style.display = "none";
-
-      const phoneInput = document.getElementById("phoneInput");
-      const otpInput = document.getElementById("otpInput");
-      if (phoneInput) phoneInput.value = "";
-      if (otpInput) otpInput.value = "";
-
-      initRecaptchaIfNeeded();
-    }
-
-    function closePhoneAuthPopup() {
-      const popup = document.getElementById("phoneAuthPopup");
-      if (!popup) return;
-      popup.style.display = "none";
-    }
-
-    function initRecaptchaIfNeeded() {
-      if (recaptchaVerifier) return;
-      recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
-        size: "invisible"
-      });
-    }
-
-    function sendOtp() {
-      const phoneInput = document.getElementById("phoneInput");
-      if (!phoneInput) return;
-      const phone = phoneInput.value.trim();
-      if (!phone) {
-        alert("Mobile number daalo (e.g. +91XXXXXXXXXX).");
-        return;
-      }
-      initRecaptchaIfNeeded();
-      auth
-        .signInWithPhoneNumber(phone, recaptchaVerifier)
-        .then(result => {
-          confirmationResultGlobal = result;
-          const otpArea = document.getElementById("otpArea");
-          if (otpArea) otpArea.style.display = "block";
-          alert("OTP bhej diya gaya.");
-        })
-        .catch(err => {
-          console.error(err);
-          alert("OTP send nahi ho paaya: " + err.message);
-        });
-    }
-
-    function verifyOtp() {
-      const otpInput = document.getElementById("otpInput");
-      if (!otpInput) return;
-      const code = otpInput.value.trim();
-      if (!code) {
-        alert("OTP daalo.");
-        return;
-      }
-      if (!confirmationResultGlobal) {
-        alert("Pehle OTP bhejna padega.");
-        return;
-      }
-      confirmationResultGlobal
-        .confirm(code)
-        .then(result => {
-          firebaseUser = result.user;
-          onlineBackupEnabled = true;
-          localStorage.setItem(ONLINE_BACKUP_KEY, "1");
-          updateOnlineStatusUI();
-          saveStateToFirestore();
-          alert("Phone verify ho gaya. Ab se cloud backup ON hai (per-device).");
-          closePhoneAuthPopup();
-        })
-        .catch(err => {
-          console.error(err);
-          alert("OTP galat hai ya expire ho gaya. Dobara try karo.");
-        });
-    }
-
-    function signOutCloud() {
-      if (!firebaseUser) {
-        alert("Abhi koi online backup login active nahi hai.");
-        return;
-      }
-      if (!confirm("Online backup se sign out karna hai? Local data rahega, par aage sync nahi hoga.")) {
-        return;
-      }
-      auth
-        .signOut()
-        .then(() => {
-          firebaseUser = null;
-          onlineBackupEnabled = false;
-          localStorage.removeItem(ONLINE_BACKUP_KEY);
-          updateOnlineStatusUI();
-          alert("Online backup se sign out ho gaye.");
-        })
-        .catch(err => {
-          console.error(err);
-          alert("Sign out me problem aayi: " + err.message);
-        });
-    }
-
-    /* ---------- Event listeners & init ---------- */
-
-    // Theme toggle
+    // ------- Event listeners & init -------
     document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
+    document.getElementById("resetDataBtnTop").addEventListener("click", resetDataAll);
 
-    // Add mechanic
     document.getElementById("addMechanicBtn").addEventListener("click", () => {
       const nameInput = document.getElementById("mechanicName");
       const phoneInput = document.getElementById("mechanicPhone");
@@ -2223,24 +1921,6 @@
       nameInput.focus();
     });
 
-    // Reset local data
-    document.getElementById("resetDataBtn").addEventListener("click", () => {
-      if (!confirm("Saara local data aur PIN hata du? (Mechanics + Transactions + PIN sab clear)")) return;
-      state = { mechanics: [], transactions: [] };
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(PIN_KEY);
-      localStorage.removeItem(GBOARD_TIP_KEY);
-      localStorage.removeItem(SHOP_KEY);
-      loadState();
-      applyShopName();
-      const lockScreen = document.getElementById("lockScreen");
-      if (lockScreen) {
-        lockScreen.style.display = "flex";
-        initLockScreen();
-      }
-    });
-
-    // Menu toggle
     document.getElementById("menuBtn").addEventListener("click", () => {
       const menu = document.getElementById("menuDropdown");
       if (!menu) return;
@@ -2255,35 +1935,24 @@
         "3) Description me maal ka detail likho.\n" +
         "4) Run dabao.\n" +
         "5) Statement button se kisi ek mechanic ka pura hisaab dekh sakte ho.\n" +
-        "6) Backup se JSON file download karke safe rakh sakte ho; Restore se wapas laa sakte ho.\n" +
-        "7) Online backup ke liye phone number se login karke cloud sync ON kar sakte ho (per-device)."
+        "6) JSON Backup se file download karke safe rakh sakte ho; Restore se wapas laa sakte ho.\n" +
+        "7) Online backup ON ho to cloud pe bhi copy save hoti rahegi."
       );
     });
 
     document.getElementById("menuContact").addEventListener("click", () => {
-      alert("Contact support: (yahan baad me apna phone number / WhatsApp link add kar sakte ho).");
+      alert("Contact: (yahan baad me apna phone number / WhatsApp link add kar sakte ho).");
     });
 
     document.getElementById("menuBackup").addEventListener("click", backupData);
     document.getElementById("menuRestore").addEventListener("click", triggerRestore);
     document.getElementById("menuChangePin").addEventListener("click", changePin);
     document.getElementById("menuChangeShop").addEventListener("click", changeShopName);
+    document.getElementById("menuOnlineBackupToggle").addEventListener("click", toggleOnlineBackup);
+    document.getElementById("menuRestoreOnline").addEventListener("click", restoreFromOnlineBackup);
 
-    document.getElementById("menuOnlineBackup").addEventListener("click", openPhoneAuthPopup);
-    document.getElementById("menuCloudRestore").addEventListener("click", restoreFromCloud);
-    document.getElementById("menuLogoutCloud").addEventListener("click", signOutCloud);
-
-    // Phone popup buttons
-    document.getElementById("closePhonePopupBtn").addEventListener("click", closePhoneAuthPopup);
-    document.getElementById("sendOtpBtn").addEventListener("click", sendOtp);
-    document.getElementById("verifyOtpBtn").addEventListener("click", verifyOtp);
-    document.getElementById("cancelOtpBtn").addEventListener("click", closePhoneAuthPopup);
-
-    // File inputs
     document.getElementById("restoreFileInput").addEventListener("change", handleRestoreFile);
-    document.getElementById("forgotPinFileInput").addEventListener("change", handleForgotPinFile);
 
-    // Search fields
     document.getElementById("mechanicSearchInput").addEventListener("input", (e) => {
       mechanicSearchQuery = e.target.value || "";
       renderMechanics();
@@ -2294,11 +1963,9 @@
       renderTransactions();
     });
 
-    // Run / Undo / Edit buttons
     document.getElementById("runCommandBtn").addEventListener("click", () => {
       const cmdInput = document.getElementById("commandInput");
       const commandText = cmdInput.value.trim();
-
       const quickDone = handleQuickEntry();
       if (!quickDone) {
         if (!commandText) {
@@ -2308,7 +1975,6 @@
         const ok = handleCommand(commandText);
         if (!ok) return;
       }
-
       document.getElementById("quickAmountInput").value = "";
       document.getElementById("descriptionInput").value = "";
       cmdInput.value = "";
@@ -2317,52 +1983,63 @@
     document.getElementById("undoBtn").addEventListener("click", undoLastTransaction);
     document.getElementById("editLastBtn").addEventListener("click", editLastTransaction);
 
-    // Mini statement buttons
     document.getElementById("downloadMiniCsvBtn").addEventListener("click", () => {
-      if (!currentStatementMechanicId) {
-        alert("Pehle koi mechanic ka statement khol lo.");
-        return;
-      }
-      exportSingleMechanicCSV(currentStatementMechanicId);
-    });
-    document.getElementById("closeMiniBtn").addEventListener("click", () => {
-      document.getElementById("miniStatementCard").style.display = "none";
+      if (!currentStatementMechanicId) return;
+      const mech = state.mechanics.find(m => m.id === currentStatementMechanicId);
+      if (!mech) return;
+      const txns = state.transactions
+        .slice()
+        .reverse()
+        .filter(t => t.mechanicId === mech.id);
+      const rows = [];
+      rows.push(["Statement for", mech.name]);
+      rows.push(["Phone", mech.phone || ""]);
+      rows.push(["Generated at", new Date().toISOString()]);
+      rows.push([]);
+      rows.push(["id", "date", "time", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
+      txns.forEach(t => {
+        const dt = new Date(t.timestamp);
+        rows.push([
+          t.id,
+          formatDateDDMMYYYY(dt),
+          formatTimeHHMMSS(dt),
+          t.mechanicId,
+          t.mechanicName,
+          t.type,
+          t.amount,
+          t.note
+        ]);
+      });
+      downloadCSV(`statement_${mech.name.replace(/\s+/g, "_")}.csv`, rows);
     });
 
-    // Export range change
-    document.getElementById("exportRangeSelect").addEventListener("change", (e) => {
-      exportRangeMode = e.target.value;
-      const sd = document.getElementById("exportStartDate");
-      const ed = document.getElementById("exportEndDate");
-      if (exportRangeMode === "custom") {
-        sd.style.display = "block";
-        ed.style.display = "block";
-      } else {
-        sd.style.display = "none";
-        ed.style.display = "none";
-      }
+    document.getElementById("closeMiniBtn").addEventListener("click", () => {
+      document.getElementById("miniStatementCard").style.display = "none";
+      currentStatementMechanicId = null;
     });
 
     document.getElementById("exportMechanicsBtn").addEventListener("click", exportMechanicsCSV);
     document.getElementById("exportTransactionsBtn").addEventListener("click", exportTransactionsCSV);
 
-    /* ---------- Initial load ---------- */
-    applyTheme();
-    applyShopName();
-    loadState();
-    initLockScreen();
-
-    // Restore online backup flag
-    onlineBackupEnabled = localStorage.getItem(ONLINE_BACKUP_KEY) === "1";
-    auth.onAuthStateChanged((user) => {
-      firebaseUser = user;
-      updateOnlineStatusUI();
-      if (user && onlineBackupEnabled && !firstCloudSyncDone) {
-        // First time after reload: just mark synced; manual restore is via menu
-        firstCloudSyncDone = true;
+    document.getElementById("exportRangeSelect").addEventListener("change", (e) => {
+      exportRangeMode = e.target.value;
+      const startEl = document.getElementById("exportStartDate");
+      const endEl = document.getElementById("exportEndDate");
+      if (exportRangeMode === "custom") {
+        startEl.style.display = "block";
+        endEl.style.display = "block";
+      } else {
+        startEl.style.display = "none";
+        endEl.style.display = "none";
       }
     });
+
+    // ------- Initial boot -------
+    loadState();
+    applyTheme();
+    applyShopName();
+    loadOnlineBackupSetting();
+    initPhoneAuthWatcher(); // this will decide phone login / PIN
   </script>
 </body>
 </html>
-     
