@@ -864,25 +864,34 @@
       reader.readAsText(file);
     }
 
-    // ------- ONLINE backup restore -------
+    // ------- Online backup (Firestore) -------
     async function restoreFromOnlineBackup() {
       if (!currentUser) {
-        alert("Online backup restore ke liye pehle phone login zaroori hai.");
+        alert("Online backup use karne ke liye pehle mobile number se login karo.");
         return;
       }
       try {
         const snap = await db.collection("backups").doc(currentUser.uid).get();
         if (!snap.exists) {
-          alert("Cloud pe koi online backup nahi mila.");
+          alert("Cloud pe koi backup nahi mila.");
           return;
         }
-        const data = snap.data();
+        const data = snap.data() || {};
         if (!data.state) {
-          alert("Online backup me state data nahi mila.");
+          alert("Online backup me data format theek nahi hai.");
           return;
         }
+
+        if (!confirm(
+          "Online backup se is device ka pura local data overwrite ho jayega.\n\n" +
+          "Proceed?"
+        )) {
+          return;
+        }
+
         state = data.state;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
         if (data.theme) {
           localStorage.setItem(THEME_KEY, data.theme);
         }
@@ -890,15 +899,16 @@
           if (data.shopName) localStorage.setItem(SHOP_KEY, data.shopName);
           else localStorage.removeItem(SHOP_KEY);
         }
-        alert("Online backup se data restore ho gaya. Page reload ho raha hai.");
+
+        alert("Online backup se restore complete. Screen reload ho rahi hai.");
         location.reload();
       } catch (err) {
-        console.error(err);
-        alert("Online backup read karte waqt error aaya.");
+        console.error("Restore online backup error:", err);
+        alert("Online backup read karte waqt error aaya. Thodi der baad dobara try karo.");
       }
     }
 
-    // ------- PIN lock logic -------
+    // ------- PIN / Lock screen -------
     function initLockScreen() {
       const lockScreen = document.getElementById("lockScreen");
       if (!lockScreen) return;
@@ -919,26 +929,28 @@
         setTimeout(() => {
           const ip = document.getElementById("pinInput");
           if (ip) ip.focus();
-        }, 80);
+        }, 50);
       } else {
         pinSetupArea.style.display = "block";
         pinLoginArea.style.display = "none";
         lockTitle.textContent = "Set PIN";
         lockSubtitle.textContent = "Pehli baar ke liye 4 digit PIN set karo.";
-        if (forgotBtn) forgotBtn.style.display = "none";
+        if (forgotBtn) forgotBtn.style.display = "inline-flex";
         setTimeout(() => {
           const ip = document.getElementById("pinNew");
           if (ip) ip.focus();
-        }, 80);
+        }, 50);
       }
 
       const saveBtn = document.getElementById("savePinBtn");
       const unlockBtn = document.getElementById("unlockBtn");
 
-      if (saveBtn) {
+      if (saveBtn && !saveBtn._bound) {
+        saveBtn._bound = true;
         saveBtn.onclick = () => {
           const p1 = document.getElementById("pinNew").value.trim();
           const p2 = document.getElementById("pinConfirm").value.trim();
+
           if (!/^\d{4}$/.test(p1)) {
             alert("PIN 4 digit ka number hona chahiye (sirf 0-9).");
             return;
@@ -964,10 +976,12 @@
           }
           const cmd = document.getElementById("commandInput");
           if (cmd) cmd.focus();
+          uploadBackupToCloud("set-pin");
         };
       }
 
-      if (unlockBtn) {
+      if (unlockBtn && !unlockBtn._bound) {
+        unlockBtn._bound = true;
         unlockBtn.onclick = () => {
           const entered = document.getElementById("pinInput").value.trim();
           const real = localStorage.getItem(PIN_KEY);
@@ -976,7 +990,7 @@
             const cmd = document.getElementById("commandInput");
             if (cmd) cmd.focus();
           } else {
-            alert("GALAT PIN. Please dobara try karo.");
+            alert("GALAT PIN. Dobara try karo.");
             const ip = document.getElementById("pinInput");
             if (ip) {
               ip.value = "";
@@ -986,15 +1000,18 @@
         };
       }
 
-      if (forgotBtn) {
-        forgotBtn.onclick = handleForgotPinOtpFlow;
+      if (forgotBtn && !forgotBtn._bound) {
+        forgotBtn._bound = true;
+        forgotBtn.onclick = () => {
+          handleForgotPinOtp();
+        };
       }
     }
 
     function changePin() {
       const oldPin = localStorage.getItem(PIN_KEY);
       if (oldPin) {
-        const enteredOld = prompt("Enter current PIN (for safety):", "");
+        const enteredOld = prompt("Enter current PIN (safety ke liye):", "");
         if (enteredOld === null) return;
         if (enteredOld !== oldPin) {
           alert("Current PIN galat hai.");
@@ -1015,99 +1032,81 @@
       }
       localStorage.setItem(PIN_KEY, newPin1.trim());
       alert("PIN change ho gaya.");
+      uploadBackupToCloud("change-pin");
     }
 
-    // ------- Forgot PIN via OTP (same phone) -------
-    let forgotConfirmationResult = null;
-
-    function setupRecaptchaIfNeeded() {
-      if (window.recaptchaVerifier) return;
-      try {
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
-          size: "invisible"
-        });
-        window.recaptchaVerifier.render().catch(() => {});
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    function handleForgotPinOtpFlow() {
+    // Forgot PIN via OTP (same phone number)
+    async function handleForgotPinOtp() {
       if (!currentUser || !currentUser.phoneNumber) {
-        alert("Phone login expire ho gaya lagta hai. Page reload karke dobara login karo.");
+        alert("Forgot PIN ke liye pehle mobile number se login hona zaroori hai.");
         return;
       }
-      const phone = currentUser.phoneNumber;
-      if (!confirm(`We will send OTP to ${phone}.\n\nIss number ka OTP aane ke baad naya PIN set kar sakoge.`)) {
+      if (!confirm(
+        "PIN reset karne ke liye ek OTP aapke number par bheja jayega:\n\n" +
+        currentUser.phoneNumber + "\n\nProceed?"
+      )) {
         return;
       }
-      setupRecaptchaIfNeeded();
-      firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
-        .then((conf) => {
-          forgotConfirmationResult = conf;
-          const otp = prompt("Forgot PIN ke liye aaya hua 6-digit OTP yahan daalo:");
-          if (!otp) return;
-          return forgotConfirmationResult.confirm(otp);
-        })
-        .then((cred) => {
-          if (!cred) return;
-          currentUser = cred.user;
-          const newPin1 = prompt("OTP verified ✅\n\nNaya 4-digit PIN likho:", "");
-          if (newPin1 === null) return;
-          if (!/^\d{4}$/.test(newPin1.trim())) {
-            alert("PIN 4 digit ka number hona chahiye (0-9).");
-            return;
-          }
-          const newPin2 = prompt("Naya PIN dobara likho:", "");
-          if (newPin2 === null) return;
-          if (newPin1.trim() !== newPin2.trim()) {
-            alert("Dono PIN match nahi kar rahe.");
-            return;
-          }
-          localStorage.setItem(PIN_KEY, newPin1.trim());
-          alert("PIN reset ho gaya. Ab naya PIN use karo.");
-          const lockScreen = document.getElementById("lockScreen");
-          if (lockScreen) lockScreen.style.display = "none";
-        })
-        .catch(err => {
-          console.error(err);
-          alert("Forgot PIN OTP flow me error: " + (err.message || err));
-        });
-    }
 
-    // ------- PHONE AUTH (Firebase OTP) -------
-    function initPhoneAuthWatcher() {
-      firebase.auth().onAuthStateChanged(async (user) => {
-        currentUser = user || null;
-        const phoneScreen = document.getElementById("phoneLoginScreen");
-        const lockScreen = document.getElementById("lockScreen");
-
-        if (!user) {
-          // show phone login screen
-          if (phoneScreen) phoneScreen.style.display = "flex";
-          if (lockScreen) lockScreen.style.display = "none";
-          setupPhoneLoginUi();
-        } else {
-          // hide phone screen, show PIN lock
-          if (phoneScreen) phoneScreen.style.display = "none";
-          if (lockScreen) lockScreen.style.display = "flex";
-          ensureDeviceId();
-          await syncUserDoc();
-          initLockScreen();
+      try {
+        const verifier = getOrCreateRecaptcha();
+        const result = await firebase.auth().signInWithPhoneNumber(
+          currentUser.phoneNumber,
+          verifier
+        );
+        const code = prompt("OTP daalo (SMS se aaya hoga):", "");
+        if (!code) {
+          alert("OTP nahi dala.");
+          return;
         }
-      });
+        await result.confirm(code);
+        const p1 = prompt("Naya 4-digit PIN daalo:", "");
+        if (!p1 || !/^\d{4}$/.test(p1.trim())) {
+          alert("PIN 4 digit ka number hona chahiye.");
+          return;
+        }
+        const p2 = prompt("Naya PIN dobara likho:", "");
+        if (p1.trim() !== (p2 || "").trim()) {
+          alert("Dono PIN match nahi kar rahe.");
+          return;
+        }
+        localStorage.setItem(PIN_KEY, p1.trim());
+        alert("PIN reset ho gaya. Ab naya PIN se unlock kar sakte ho.");
+        uploadBackupToCloud("forgot-pin-reset");
+        initLockScreen();
+      } catch (err) {
+        console.error("Forgot PIN OTP error:", err);
+        alert("OTP verify karte waqt error aaya. Thodi der baad try karo.");
+      }
     }
 
-    function setupPhoneLoginUi() {
+    // ------- Phone auth (OTP login) -------
+    let recaptchaVerifier = null;
+
+    function getOrCreateRecaptcha() {
+      if (recaptchaVerifier) return recaptchaVerifier;
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
+        size: "invisible"
+      });
+      recaptchaVerifier.render().catch(() => {});
+      return recaptchaVerifier;
+    }
+
+    function initPhoneAuthScreen() {
+      const phoneScreen = document.getElementById("phoneLoginScreen");
+      const lockScreen = document.getElementById("lockScreen");
+      if (!phoneScreen || !lockScreen) return;
+
       const phoneInput = document.getElementById("phoneInput");
       const sendOtpBtn = document.getElementById("sendOtpBtn");
       const otpArea = document.getElementById("otpArea");
       const otpInput = document.getElementById("otpInput");
       const verifyOtpBtn = document.getElementById("verifyOtpBtn");
 
-      setupRecaptchaIfNeeded();
+      getOrCreateRecaptcha();
 
-      if (sendOtpBtn) {
+      if (sendOtpBtn && !sendOtpBtn._bound) {
+        sendOtpBtn._bound = true;
         sendOtpBtn.onclick = function() {
           let phone = (phoneInput.value || "").trim();
           if (!phone) {
@@ -1118,13 +1117,14 @@
             phone = "+91" + phone;
           }
           sendOtpBtn.disabled = true;
-          firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
-            .then((conf) => {
+
+          firebase.auth().signInWithPhoneNumber(phone, recaptchaVerifier)
+            .then(conf => {
               confirmationResultGlobal = conf;
               alert("OTP bhej diya gaya.");
               if (otpArea) otpArea.style.display = "block";
             })
-            .catch((error) => {
+            .catch(error => {
               console.error(error);
               alert("OTP bhejne me problem: " + (error.message || error));
             })
@@ -1134,7 +1134,8 @@
         };
       }
 
-      if (verifyOtpBtn) {
+      if (verifyOtpBtn && !verifyOtpBtn._bound) {
+        verifyOtpBtn._bound = true;
         verifyOtpBtn.onclick = function() {
           const code = (otpInput.value || "").trim();
           if (!code) {
@@ -1147,14 +1148,20 @@
           }
           verifyOtpBtn.disabled = true;
           confirmationResultGlobal.confirm(code)
-            .then(async (result) => {
+            .then(result => {
               currentUser = result.user;
               ensureDeviceId();
-              await syncUserDoc();
-              alert("Login successful.");
-              // onAuthStateChanged will handle UI
+              syncUserDoc();
+              phoneScreen.style.display = "none";
+              lockScreen.style.display = "flex";
+              initLockScreen();
+              loadState();
+              applyTheme();
+              applyShopName();
+              loadOnlineBackupSetting();
+              uploadBackupToCloud("first-login");
             })
-            .catch((error) => {
+            .catch(error => {
               console.error(error);
               alert("Galat OTP ya error: " + (error.message || error));
             })
@@ -1165,7 +1172,16 @@
       }
     }
 
-    // ------- CORE DATA OPS (mechanics & transactions) -------
+    // ------- Date helpers for CSV -------
+    function pad2(n) { return String(n).padStart(2, "0"); }
+    function formatDateDDMMYYYY(d) {
+      return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
+    }
+    function formatTimeHHMMSS(d) {
+      return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+    }
+
+    // ------- Core data operations -------
     function addMechanic(name, openingBalance = 0, phone = "") {
       if (!name.trim()) return;
       const existing = state.mechanics.find(
@@ -1175,10 +1191,13 @@
         alert("Ye naam pehle se hai. Thoda alag naam rakho ya sirf command se kaam karo.");
         return;
       }
+
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
       const opening = Number(openingBalance) || 0;
+
       const mech = { id, name: name.trim(), balance: 0, phone: phone.trim() || "" };
       state.mechanics.push(mech);
+
       if (opening) {
         addTransaction(id, "ADD", opening, "Opening balance");
       } else {
@@ -1189,6 +1208,7 @@
     function addTransaction(mechanicId, type, amount, note = "") {
       const mechanic = state.mechanics.find(m => m.id === mechanicId);
       if (!mechanic) return;
+
       if (type === "ADD") mechanic.balance += amount;
       else if (type === "DEDUCT") mechanic.balance -= amount;
 
@@ -1201,6 +1221,7 @@
         note,
         timestamp: new Date().toISOString()
       });
+
       saveState("add-transaction");
     }
 
@@ -1211,12 +1232,14 @@
       }
       const last = state.transactions[0];
       const mech = state.mechanics.find(m => m.id === last.mechanicId);
+
       if (mech) {
         if (last.type === "ADD") mech.balance -= last.amount;
         else if (last.type === "DEDUCT") mech.balance += last.amount;
       }
+
       state.transactions.shift();
-      saveState("undo-last");
+      saveState("undo-transaction");
       alert("Last transaction undo kar diya gaya.");
     }
 
@@ -1231,6 +1254,7 @@
         alert("Mechanic nahi mila (data mismatch).");
         return;
       }
+
       const newAmountStr = prompt(
         "Last transaction ka amount change karo:\n\n" +
         "Name: " + t.mechanicName + "\n" +
@@ -1245,7 +1269,11 @@
         return;
       }
       const newAmount = Number(newAmountStr);
-      const newNote = prompt("Description / Note edit karo (optional):", t.note || "");
+
+      const newNote = prompt(
+        "Description / Note edit karo (optional):",
+        t.note || ""
+      );
       if (newNote === null) return;
 
       if (t.type === "ADD") mech.balance -= t.amount;
@@ -1257,7 +1285,7 @@
       if (t.type === "ADD") mech.balance += newAmount;
       else if (t.type === "DEDUCT") mech.balance -= newAmount;
 
-      saveState("edit-last");
+      saveState("edit-last-transaction");
       alert("Last transaction update ho gaya.");
     }
 
@@ -1269,6 +1297,7 @@
       }
       const t = state.transactions[index];
       const mech = state.mechanics.find(m => m.id === t.mechanicId);
+
       const confirmMsg =
         "Ye transaction delete karna hai?\n\n" +
         "Name: " + (t.mechanicName || "") + "\n" +
@@ -1276,17 +1305,19 @@
         "Amount: ₹" + formatAmount(t.amount) + "\n" +
         "Note: " + (t.note || "-");
       if (!confirm(confirmMsg)) return;
+
       if (mech) {
         if (t.type === "ADD") mech.balance -= t.amount;
         else if (t.type === "DEDUCT") mech.balance += t.amount;
       }
+
       state.transactions.splice(index, 1);
-      saveState("delete-txn");
+      saveState("delete-transaction");
       alert("Transaction delete ho gaya.");
     }
 
     function deleteMechanic(id) {
-      if (!confirm("Is mechanic ka pura data hata du (sirf local + cloud backup se)?")) return;
+      if (!confirm("Is mechanic ka pura data hata du (sirf is device se)?")) return;
       state.mechanics = state.mechanics.filter(m => m.id !== id);
       state.transactions = state.transactions.filter(t => t.mechanicId !== id);
       saveState("delete-mechanic");
@@ -1298,6 +1329,7 @@
         alert("Mechanic nahi mila.");
         return;
       }
+
       const newName = prompt("Mechanic ka naam change karo:", mech.name);
       if (newName === null) return;
       const trimmedName = newName.trim();
@@ -1305,6 +1337,7 @@
         alert("Naam khali nahi ho sakta.");
         return;
       }
+
       const newPhone = prompt("Phone number (optional):", mech.phone || "");
       if (newPhone === null) return;
 
@@ -1320,6 +1353,7 @@
       const openingTxns = mechTxnsAll.filter(
         t => t.type === "ADD" && t.note === "Opening balance"
       );
+
       if (mechTxnsAll.length === 1 && openingTxns.length === 1) {
         const openingTxn = openingTxns[0];
         const currentOpening = openingTxn.amount;
@@ -1329,6 +1363,7 @@
           "Naya opening balance likho (ya blank chhod do agar same rakhna hai):",
           currentOpening
         );
+
         if (newOpeningStr !== null) {
           const trimmed = String(newOpeningStr).trim();
           if (trimmed !== "") {
@@ -1348,13 +1383,17 @@
 
       mech.name = trimmedName;
       mech.phone = newPhone.trim();
+
       state.transactions.forEach(t => {
-        if (t.mechanicId === mech.id) t.mechanicName = trimmedName;
+        if (t.mechanicId === mech.id) {
+          t.mechanicName = trimmedName;
+        }
       });
+
       saveState("edit-mechanic");
     }
 
-    // ------- Rendering (same as your working logic) -------
+    // ------- Rendering -------
     const mechanicTableBody = document.getElementById("mechanicTableBody");
     const logEl = document.getElementById("log");
     const totalSummaryEl = document.getElementById("totalSummary");
@@ -1375,22 +1414,28 @@
       opt.value = "";
       opt.textContent = "Select mechanic";
       sel.appendChild(opt);
+
       state.mechanics.forEach(m => {
         const o = document.createElement("option");
         o.value = m.id;
         o.textContent = m.name;
         sel.appendChild(o);
       });
-      if (prev && state.mechanics.some(m => m.id === prev)) sel.value = prev;
+
+      if (prev && state.mechanics.some(m => m.id === prev)) {
+        sel.value = prev;
+      }
     }
 
     function renderMechanics() {
       mechanicTableBody.innerHTML = "";
       let list = state.mechanics;
+
       if (mechanicSearchQuery.trim()) {
         const q = mechanicSearchQuery.toLowerCase();
         list = list.filter(m => m.name.toLowerCase().includes(q));
       }
+
       if (list.length === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
@@ -1403,12 +1448,16 @@
         list.forEach(m => {
           const tr = document.createElement("tr");
           const nameTd = document.createElement("td");
-          nameTd.innerHTML = m.name + (m.phone ? `<br><span class="muted">📞 ${m.phone}</span>` : "");
+          nameTd.innerHTML =
+            m.name +
+            (m.phone ? `<br><span class="muted">📞 ${m.phone}</span>` : "");
+
           const balTd = document.createElement("td");
           const balSpan = document.createElement("span");
           balSpan.className = "pill " + (m.balance >= 0 ? "pill-pos" : "pill-neg");
           balSpan.textContent = formatAmount(m.balance);
           balTd.appendChild(balSpan);
+
           const actionsTd = document.createElement("td");
 
           const btnStatement = document.createElement("button");
@@ -1466,26 +1515,32 @@
           mechanicTableBody.appendChild(tr);
         });
       }
+
       const total = state.mechanics.reduce((sum, m) => sum + m.balance, 0);
       const count = state.mechanics.length;
       totalSummaryEl.textContent =
         "Total across all mechanics: ₹" + formatAmount(total) +
         " | Total mechanics: " + count;
+
       refreshQuickEntryMechanics();
     }
 
     function renderTransactions() {
       logEl.innerHTML = "";
       let txns = state.transactions;
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        txns = txns.filter(t =>
-          t.mechanicName.toLowerCase().includes(q) ||
-          (t.note && t.note.toLowerCase().includes(q)) ||
-          t.type.toLowerCase().includes(q) ||
-          String(t.amount).includes(q)
-        );
+        txns = txns.filter(t => {
+          return (
+            t.mechanicName.toLowerCase().includes(q) ||
+            (t.note && t.note.toLowerCase().includes(q)) ||
+            t.type.toLowerCase().includes(q) ||
+            String(t.amount).includes(q)
+          );
+        });
       }
+
       if (txns.length === 0) {
         const div = document.createElement("div");
         div.className = "muted";
@@ -1502,12 +1557,14 @@
             `${t.type === "ADD" ? "to" : "from"} <b>${t.mechanicName}</b>` +
             (t.note ? ` — ${t.note}` : "") +
             `<br><span class="muted">${date.toLocaleString()}</span>`;
+
           const delBtn = document.createElement("button");
           delBtn.textContent = "🗑 Delete";
           delBtn.className = "secondary";
           delBtn.style.marginTop = "4px";
           delBtn.style.fontSize = "0.7rem";
           delBtn.onclick = () => deleteTransaction(t.id);
+
           div.appendChild(delBtn);
           logEl.appendChild(div);
         });
@@ -1517,23 +1574,37 @@
     function renderTodaySummary() {
       const summaryEl = document.getElementById("todaySummary");
       if (!summaryEl) return;
+
       if (!state.transactions.length) {
         summaryEl.textContent = "No transactions yet today.";
         return;
       }
+
       const now = new Date();
-      let addTotal = 0, deductTotal = 0;
+      const y = now.getFullYear();
+      const m = now.getMonth();
+      const d = now.getDate();
+
+      let addTotal = 0;
+      let deductTotal = 0;
+
       state.transactions.forEach(t => {
         const dt = new Date(t.timestamp);
-        if (dt.toDateString() === now.toDateString()) {
+        if (
+          dt.getFullYear() === y &&
+          dt.getMonth() === m &&
+          dt.getDate() === d
+        ) {
           if (t.type === "ADD") addTotal += t.amount;
           else if (t.type === "DEDUCT") deductTotal += t.amount;
         }
       });
+
       if (addTotal === 0 && deductTotal === 0) {
         summaryEl.textContent = "No transactions yet today.";
         return;
       }
+
       const net = addTotal - deductTotal;
       summaryEl.innerHTML =
         `Today – ` +
@@ -1547,26 +1618,33 @@
       const miniBody = document.getElementById("miniBody");
       const miniTitle = document.getElementById("miniTitle");
       const miniTotals = document.getElementById("miniTotals");
+
       if (!currentStatementMechanicId) {
         card.style.display = "none";
         return;
       }
+
       const mech = state.mechanics.find(m => m.id === currentStatementMechanicId);
       if (!mech) {
         card.style.display = "none";
         return;
       }
+
       const txns = state.transactions.filter(t => t.mechanicId === mech.id);
       miniTitle.textContent = `Statement – ${mech.name}`;
-      let totalAdd = 0, totalDeduct = 0;
+
+      let totalAdd = 0;
+      let totalDeduct = 0;
       txns.forEach(t => {
         if (t.type === "ADD") totalAdd += t.amount;
         else if (t.type === "DEDUCT") totalDeduct += t.amount;
       });
+
       miniTotals.innerHTML =
         `<span class="tag-add">ADD: ₹${formatAmount(totalAdd)}</span> &nbsp; ` +
         `<span class="tag-deduct">DEDUCT: ₹${formatAmount(totalDeduct)}</span> &nbsp; ` +
         `<span>Net: ₹${formatAmount(mech.balance)}</span>`;
+
       miniBody.innerHTML = "";
       if (txns.length === 0) {
         const div = document.createElement("div");
@@ -1588,14 +1666,294 @@
       }
     }
 
-    // ------- CSV export helpers -------
-    function pad2(n) { return n.toString().padStart(2, "0"); }
-    function formatDateDDMMYYYY(d) {
-      return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
+    // ------- Number word parsing / commands -------
+    function wordsToNumber(text) {
+      text = text.toLowerCase().replace(/-/g, " ");
+      const tokens = text.split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return NaN;
+
+      const englishVal = parseEnglishNumberWords(tokens);
+      if (!isNaN(englishVal) && englishVal > 0) return englishVal;
+
+      const hindiVal = parseHindiNumberWords(tokens);
+      if (!isNaN(hindiVal) && hindiVal > 0) return hindiVal;
+
+      return NaN;
     }
-    function formatTimeHHMMSS(d) {
-      return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+
+    function parseEnglishNumberWords(tokens) {
+      const units = {
+        "one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,
+        "ten":10,"eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,
+        "sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19
+      };
+      const tens = {
+        "twenty":20,"thirty":30,"forty":40,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90
+      };
+
+      let total = 0;
+      let current = 0;
+      let found = false;
+
+      for (const tok of tokens) {
+        if (units[tok] != null) {
+          current += units[tok];
+          found = true;
+        } else if (tens[tok] != null) {
+          current += tens[tok];
+          found = true;
+        } else if (tok === "hundred") {
+          if (current === 0) current = 1;
+          current = current * 100;
+          found = true;
+        } else if (tok === "thousand") {
+          if (current === 0) current = 1;
+          total += current * 1000;
+          current = 0;
+          found = true;
+        }
+      }
+
+      if (!found) return NaN;
+      return total + current;
     }
+
+    function parseHindiNumberWords(tokens) {
+      const units = {
+        "ek":1,"ik":1,
+        "do":2,
+        "teen":3,"tin":3,
+        "char":4,"chaar":4,
+        "panch":5,"paanch":5,
+        "chhe":6,"che":6,"chhah":6,
+        "saat":7,"sath":7,
+        "aath":8,"ath":8,
+        "nau":9,"no":9,
+        "das":10
+      };
+
+      let total = 0;
+      let current = 0;
+      let found = false;
+
+      for (let i = 0; i < tokens.length; i++) {
+        const tok = tokens[i];
+
+        if (["dedh","ded","derd"].includes(tok) && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
+          total += 150;
+          found = true;
+          i++;
+          continue;
+        }
+
+        if ((tok === "dhai" || tok === "dhaii" || tok === "dhaiya") && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
+          total += 250;
+          found = true;
+          i++;
+          continue;
+        }
+
+        if (units[tok] != null) {
+          current += units[tok];
+          found = true;
+          continue;
+        }
+
+        if (tok === "sau" || tok === "so") {
+          if (current === 0) current = 1;
+          current = current * 100;
+          found = true;
+          continue;
+        }
+
+        if (tok === "hazar" || tok === "hazaar") {
+          if (current === 0) current = 1;
+          total += current * 1000;
+          current = 0;
+          found = true;
+          continue;
+        }
+      }
+
+      if (!found) return NaN;
+      return total + current;
+    }
+
+    function extractAmount(text) {
+      const numMatch = text.match(/(\d+(\.\d+)?)/);
+      if (numMatch) return Number(numMatch[1]);
+
+      const wordVal = wordsToNumber(text);
+      if (!isNaN(wordVal)) return wordVal;
+
+      return NaN;
+    }
+
+    function handleCommand(text) {
+      if (!text) return false;
+      const original = text;
+      text = text.toLowerCase().trim();
+
+      const addWords = [
+        "add","add karo","add kardo",
+        "plus","plus karo","plus kardo",
+        "ka samaan liya","samaan liya","ka saman liya","saman liya",
+        "ka maal liya","maal liya",
+        "credit","credit karo",
+        "increase","increase karo",
+        "jodo","jod do",
+        "bada do","badao","badhao","bhadao",
+        "account me jod do"
+      ];
+
+      const deductWords = [
+        "deduct","deduct karo","deduct kardo",
+        "less","less karo","less kardo",
+        "minus","minus karo","minus kardo",
+        "debit","debit karo",
+        "samaan wapis kiya","saman wapis kiya","ne saman wapis kiya",
+        "ghatao","ghata do","ghata",
+        "kato","katto","kaatdo","katdo",
+        "kam karo","kam kardo",
+        "return kiya","return mila",
+        "paisa diya","paisa mila","cash mila",
+        "reduce"
+      ];
+
+      let type = null;
+      if (addWords.some(w => text.includes(w))) type = "ADD";
+      if (deductWords.some(w => text.includes(w))) type = "DEDUCT";
+
+      const amount = extractAmount(text);
+
+      let namePart = "";
+      const tokens = text.split(/\s+/);
+      const keIndex = tokens.indexOf("ke");
+      if (!namePart && keIndex > 0) {
+        namePart = tokens.slice(0, keIndex).join(" ").trim();
+      }
+      if (!namePart) {
+        const noise = new Set(["ke","ki","ka","me","mein","rs","rs.","rupay","rupees","amount"]);
+        const allTypeWords = new Set([...addWords, ...deductWords]);
+        const numWords = new Set([
+          "hundred","thousand","sau","so","hazar","hazaar","dedh","ded","dhai",
+          "ek","ik","do","teen","tin","char","chaar","panch","paanch","chhe","che","chhah",
+          "saat","sath","aath","ath","nau","no","das",
+          "one","two","three","four","five","six","seven","eight","nine","ten"
+        ]);
+        const nameTokens = tokens.filter(tok => {
+          if (!tok) return false;
+          if (/\d/.test(tok)) return false;
+          if (noise.has(tok)) return false;
+          if (allTypeWords.has(tok)) return false;
+          if (numWords.has(tok)) return false;
+          return true;
+        });
+        namePart = nameTokens.join(" ").trim();
+      }
+
+      if (!type || isNaN(amount) || !namePart) {
+        alert(
+          'Samajh nahi aaya: "' + original + '".\n\n' +
+          'Example:\n' +
+          '- rahul ke 5000 bhadao\n' +
+          '- rahul ke hundred bhadao\n' +
+          '- rahul ke sau bhadao\n' +
+          '- rahul ke dedh sau bhadao\n' +
+          '- rahul ke 2000 ghata do'
+        );
+        return false;
+      }
+
+      const mechanic = state.mechanics.find(m =>
+        m.name.toLowerCase() === namePart.toLowerCase()
+      );
+
+      if (!mechanic) {
+        alert(
+          `"${namePart}" ka naam list me nahi mila.\n` +
+          `Pehle neeche "Add Mechanic" me iss naam se entry banao, phir command do.`
+        );
+        return false;
+      }
+
+      const descInput = document.getElementById("descriptionInput");
+      const extraNote = descInput.value.trim();
+      const finalNote = extraNote
+        ? extraNote + " | Command: " + original
+        : "Command: " + original;
+
+      const previewMsg =
+        `Are you sure?\n\n` +
+        `Name: ${mechanic.name}\n` +
+        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
+        `Amount: ₹${formatAmount(amount)}\n` +
+        `Note: ${extraNote || "-"}\n`;
+
+      if (!confirm(previewMsg)) {
+        return false;
+      }
+
+      addTransaction(mechanic.id, type, amount, finalNote);
+      showToast(mechanic.name, type, amount, extraNote || original);
+      return true;
+    }
+
+    function handleQuickEntry() {
+      const mechSel = document.getElementById("quickMechanicSelect");
+      const amtInput = document.getElementById("quickAmountInput");
+      const actionSel = document.getElementById("quickActionSelect");
+      const descInput = document.getElementById("descriptionInput");
+
+      if (!mechSel || !amtInput || !actionSel) return false;
+
+      const mechId = mechSel.value;
+      const amountStr = amtInput.value.trim();
+      const type = actionSel.value || "ADD";
+
+      if (!mechId || !amountStr) {
+        return false; // maybe command mode
+      }
+
+      if (isNaN(amountStr)) {
+        alert("Amount number me likho (e.g. 500, 1200.50).");
+        return false;
+      }
+
+      const amount = Number(amountStr);
+      if (!amount || amount <= 0) {
+        alert("Amount 0 se bada hona chahiye.");
+        return false;
+      }
+
+      const mechanic = state.mechanics.find(m => m.id === mechId);
+      if (!mechanic) {
+        alert("Mechanic list me nahi mila.");
+        return false;
+      }
+
+      const extraNote = descInput.value.trim();
+      const finalNote = extraNote
+        ? extraNote + " | Quick entry"
+        : "Quick entry";
+
+      const previewMsg =
+        `Are you sure?\n\n` +
+        `Name: ${mechanic.name}\n` +
+        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
+        `Amount: ₹${formatAmount(amount)}\n` +
+        `Note: ${extraNote || "-"}\n`;
+
+      if (!confirm(previewMsg)) {
+        return false;
+      }
+
+      addTransaction(mechanic.id, type, amount, finalNote);
+      showToast(mechanic.name, type, amount, extraNote || "Quick entry");
+      return true;
+    }
+
+    // ------- CSV export -------
     function toCSVValue(value) {
       if (value == null) return "";
       const s = String(value);
@@ -1604,8 +1962,12 @@
       }
       return s;
     }
+
     function downloadCSV(filename, rows) {
-      const csvContent = rows.map(row => row.map(toCSVValue).join(",")).join("\r\n");
+      const csvContent = rows
+        .map(row => row.map(toCSVValue).join(","))
+        .join("\r\n");
+
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1616,19 +1978,50 @@
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }
-    function exportMechanicsCSV() {
+
+    function exportSingleMechanicCSV(mechanicId) {
+      const mech = state.mechanics.find(m => m.id === mechanicId);
+      if (!mech) {
+        alert("Mechanic nahi mila.");
+        return;
+      }
+      const txns = state.transactions
+        .slice()
+        .reverse()
+        .filter(t => t.mechanicId === mechanicId);
+
       const rows = [];
-      rows.push(["id", "name", "phone", "current_balance"]);
-      state.mechanics.forEach(m => {
-        rows.push([m.id, m.name, m.phone || "", m.balance]);
+      rows.push(["Statement for", mech.name]);
+      rows.push(["Phone", mech.phone || ""]);
+      rows.push(["Generated at", new Date().toISOString()]);
+      rows.push([]);
+      rows.push(["id", "date", "time", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
+
+      txns.forEach(t => {
+        const dt = new Date(t.timestamp);
+        rows.push([
+          t.id,
+          formatDateDDMMYYYY(dt),
+          formatTimeHHMMSS(dt),
+          t.mechanicId,
+          t.mechanicName,
+          t.type,
+          t.amount,
+          t.note
+        ]);
       });
-      downloadCSV("mechanics.csv", rows);
+
+      downloadCSV(`statement_${mech.name.replace(/\s+/g, "_")}.csv`, rows);
     }
+
     function getSelectedDateRange() {
       const now = new Date();
-      let start = null, end = null;
-      if (exportRangeMode === "all") return { start: null, end: null };
-      if (exportRangeMode === "1d") {
+      let start = null;
+      let end = null;
+
+      if (exportRangeMode === "all") {
+        return { start: null, end: null };
+      } else if (exportRangeMode === "1d") {
         end = now;
         start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       } else if (exportRangeMode === "7d") {
@@ -1658,11 +2051,23 @@
         end = new Date(endInput);
         end.setHours(23, 59, 59, 999);
       }
+
       return { start, end };
     }
+
+    function exportMechanicsCSV() {
+      const rows = [];
+      rows.push(["id", "name", "phone", "current_balance"]);
+      state.mechanics.forEach(m => {
+        rows.push([m.id, m.name, m.phone || "", m.balance]);
+      });
+      downloadCSV("mechanics.csv", rows);
+    }
+
     function exportTransactionsCSV() {
       const { start, end, invalid } = getSelectedDateRange();
       if (invalid) return;
+
       let txns = state.transactions.slice().reverse();
       if (start && end) {
         txns = txns.filter(t => {
@@ -1670,8 +2075,10 @@
           return d >= start && d <= end;
         });
       }
+
       const rows = [];
       rows.push(["id", "date", "time", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
+
       txns.forEach(t => {
         const dt = new Date(t.timestamp);
         rows.push([
@@ -1685,361 +2092,169 @@
           t.note
         ]);
       });
+
       downloadCSV("transactions.csv", rows);
     }
 
-    // ------- Number words & command parsing (same as before) -------
-    function wordsToNumber(text) {
-      text = text.toLowerCase().replace(/-/g, " ");
-      const tokens = text.split(/\s+/).filter(Boolean);
-      if (tokens.length === 0) return NaN;
-      const englishVal = parseEnglishNumberWords(tokens);
-      if (!isNaN(englishVal) && englishVal > 0) return englishVal;
-      const hindiVal = parseHindiNumberWords(tokens);
-      if (!isNaN(hindiVal) && hindiVal > 0) return hindiVal;
-      return NaN;
-    }
-    function parseEnglishNumberWords(tokens) {
-      const units = {
-        "one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,
-        "ten":10,"eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,
-        "sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19
-      };
-      const tens = {
-        "twenty":20,"thirty":30,"forty":30+10,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90
-      };
-      let total = 0, current = 0, found = false;
-      for (const tok of tokens) {
-        if (units[tok] != null) { current += units[tok]; found = true; }
-        else if (tens[tok] != null) { current += tens[tok]; found = true; }
-        else if (tok === "hundred") { if (current === 0) current = 1; current *= 100; found = true; }
-        else if (tok === "thousand") { if (current === 0) current = 1; total += current * 1000; current = 0; found = true; }
-      }
-      if (!found) return NaN;
-      return total + current;
-    }
-    function parseHindiNumberWords(tokens) {
-      const units = {
-        "ek":1,"ik":1,"do":2,"teen":3,"tin":3,
-        "char":4,"chaar":4,"panch":5,"paanch":5,
-        "chhe":6,"che":6,"chhah":6,
-        "saat":7,"sath":7,"aath":8,"ath":8,
-        "nau":9,"no":9,"das":10
-      };
-      let total = 0, current = 0, found = false;
-      for (let i = 0; i < tokens.length; i++) {
-        const tok = tokens[i];
-        if (["dedh","ded","derd"].includes(tok) && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
-          total += 150; found = true; i++; continue;
-        }
-        if ((tok === "dhai" || tok === "dhaii" || tok === "dhaiya") && (tokens[i+1] === "sau" || tokens[i+1] === "so")) {
-          total += 250; found = true; i++; continue;
-        }
-        if (units[tok] != null) { current += units[tok]; found = true; continue; }
-        if (tok === "sau" || tok === "so") {
-          if (current === 0) current = 1;
-          current *= 100; found = true; continue;
-        }
-        if (tok === "hazar" || tok === "hazaar") {
-          if (current === 0) current = 1;
-          total += current * 1000; current = 0; found = true; continue;
-        }
-      }
-      if (!found) return NaN;
-      return total + current;
-    }
-    function extractAmount(text) {
-      const numMatch = text.match(/(\d+(\.\d+)?)/);
-      if (numMatch) return Number(numMatch[1]);
-      const wordVal = wordsToNumber(text);
-      if (!isNaN(wordVal)) return wordVal;
-      return NaN;
-    }
-    function handleCommand(text) {
-      if (!text) return false;
-      const original = text;
-      text = text.toLowerCase().trim();
-      const addWords = [
-        "add","add karo","add kardo","plus","plus karo","plus kardo",
-        "ka samaan liya","samaan liya","ka saman liya","saman liya",
-        "ka maal liya","maal liya","credit","credit karo",
-        "increase","increase karo","jodo","jod do",
-        "bada do","badao","badhao","bhadao","account me jod do"
-      ];
-      const deductWords = [
-        "deduct","deduct karo","deduct kardo","less","less karo","less kardo",
-        "minus","minus karo","minus kardo","debit","debit karo",
-        "samaan wapis kiya","saman wapis kiya","ne saman wapis kiya",
-        "ghatao","ghata do","ghata","kato","katto","kaatdo","katdo",
-        "kam karo","kam kardo","return kiya","return mila",
-        "paisa diya","paisa mila","cash mila","reduce"
-      ];
-      let type = null;
-      if (addWords.some(w => text.includes(w))) type = "ADD";
-      if (deductWords.some(w => text.includes(w))) type = "DEDUCT";
-      const amount = extractAmount(text);
-      let namePart = "";
-      const tokens = text.split(/\s+/);
-      const keIndex = tokens.indexOf("ke");
-      if (!namePart && keIndex > 0) {
-        namePart = tokens.slice(0, keIndex).join(" ").trim();
-      }
-      if (!namePart) {
-        const noise = new Set(["ke","ki","ka","me","mein","rs","rs.","rupay","rupees","amount"]);
-        const allTypeWords = new Set([...addWords, ...deductWords]);
-        const numWords = new Set([
-          "hundred","thousand","sau","so","hazar","hazaar","dedh","ded","dhai",
-          "ek","ik","do","teen","tin","char","chaar","panch","paanch","chhe","che","chhah",
-          "saat","sath","aath","ath","nau","no","das",
-          "one","two","three","four","five","six","seven","eight","nine","ten"
-        ]);
-        const nameTokens = tokens.filter(tok => {
-          if (!tok) return false;
-          if (/\d/.test(tok)) return false;
-          if (noise.has(tok)) return false;
-          if (allTypeWords.has(tok)) return false;
-          if (numWords.has(tok)) return false;
-          return true;
-        });
-        namePart = nameTokens.join(" ").trim();
-      }
-      if (!type || isNaN(amount) || !namePart) {
-        alert(
-          'Samajh nahi aaya: "' + original + '".\n\n' +
-          'Example:\n' +
-          '- rahul ke 5000 bhadao\n' +
-          '- rahul ke hundred bhadao\n' +
-          '- rahul ke sau bhadao\n' +
-          '- rahul ke dedh sau bhadao\n' +
-          '- rahul ke 2000 ghata do'
-        );
-        return false;
-      }
-      const mechanic = state.mechanics.find(
-        m => m.name.toLowerCase() === namePart.toLowerCase()
-      );
-      if (!mechanic) {
-        alert(
-          `"${namePart}" ka naam list me nahi mila.\n` +
-          `Pehle neeche "Add Mechanic" me iss naam se entry banao, phir command do.`
-        );
-        return false;
-      }
-      const descInput = document.getElementById("descriptionInput");
-      const extraNote = descInput.value.trim();
-      const finalNote = extraNote
-        ? extraNote + " | Command: " + original
-        : "Command: " + original;
-      const previewMsg =
-        `Are you sure?\n\n` +
-        `Name: ${mechanic.name}\n` +
-        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
-        `Amount: ₹${formatAmount(amount)}\n` +
-        `Note: ${extraNote || "-"}\n`;
-      if (!confirm(previewMsg)) return false;
-      addTransaction(mechanic.id, type, amount, finalNote);
-      showToast(mechanic.name, type, amount, extraNote || original);
-      return true;
-    }
+    // ------- Reset local data -------
+    function resetLocalData() {
+      if (!confirm(
+        "Saara local data (mechanics + transactions + PIN + Gboard tip + shop name) clear ho jayega.\n\n" +
+        "Firebase login same rahega. Proceed?"
+      )) return;
 
-    function handleQuickEntry() {
-      const mechSel = document.getElementById("quickMechanicSelect");
-      const amtInput = document.getElementById("quickAmountInput");
-      const actionSel = document.getElementById("quickActionSelect");
-      const descInput = document.getElementById("descriptionInput");
-      if (!mechSel || !amtInput || !actionSel) return false;
-      const mechId = mechSel.value;
-      const amountStr = amtInput.value.trim();
-      const type = actionSel.value || "ADD";
-      if (!mechId || !amountStr) return false;
-      if (isNaN(amountStr)) {
-        alert("Amount number me likho (e.g. 500, 1200.50).");
-        return false;
-      }
-      const amount = Number(amountStr);
-      if (!amount || amount <= 0) {
-        alert("Amount 0 se bada hona chahiye.");
-        return false;
-      }
-      const mechanic = state.mechanics.find(m => m.id === mechId);
-      if (!mechanic) {
-        alert("Mechanic list me nahi mila.");
-        return false;
-      }
-      const extraNote = descInput.value.trim();
-      const finalNote = extraNote
-        ? extraNote + " | Quick entry"
-        : "Quick entry";
-      const previewMsg =
-        `Are you sure?\n\n` +
-        `Name: ${mechanic.name}\n` +
-        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
-        `Amount: ₹${formatAmount(amount)}\n` +
-        `Note: ${extraNote || "-"}\n`;
-      if (!confirm(previewMsg)) return false;
-      addTransaction(mechanic.id, type, amount, finalNote);
-      showToast(mechanic.name, type, amount, extraNote || "Quick entry");
-      return true;
-    }
-
-    // ------- RESET EVERYTHING -------
-    async function resetDataAll() {
-      if (!confirm("Saara local data, PIN aur phone login clear kar du? (Mechanics + Transactions + PIN + login sab clear)")) return;
       state = { mechanics: [], transactions: [] };
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(PIN_KEY);
       localStorage.removeItem(GBOARD_TIP_KEY);
       localStorage.removeItem(SHOP_KEY);
-      localStorage.removeItem(THEME_KEY);
-      localStorage.removeItem(DEVICE_ID_KEY);
-      localStorage.removeItem(ONLINE_BACKUP_KEY);
-      try {
-        await firebase.auth().signOut();
-      } catch (e) {
-        console.error("signOut error:", e);
+
+      loadState();
+      applyShopName();
+      const lockScreen = document.getElementById("lockScreen");
+      if (lockScreen) {
+        lockScreen.style.display = "flex";
+        initLockScreen();
       }
-      alert("Reset complete. Page reload ho raha hai.");
-      location.reload();
+      uploadBackupToCloud("reset-local-data");
     }
 
-    // ------- Event listeners & init -------
-    document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
-    document.getElementById("resetDataBtnTop").addEventListener("click", resetDataAll);
+    // ------- Event listeners + startup -------
+    window.addEventListener("load", () => {
+      ensureDeviceId();
+      applyTheme();
+      applyShopName();
+      loadOnlineBackupSetting();
 
-    document.getElementById("addMechanicBtn").addEventListener("click", () => {
-      const nameInput = document.getElementById("mechanicName");
-      const phoneInput = document.getElementById("mechanicPhone");
-      const openingInput = document.getElementById("openingBalance");
-      addMechanic(
-        nameInput.value.trim(),
-        openingInput.value.trim() || 0,
-        phoneInput.value.trim()
-      );
-      nameInput.value = "";
-      phoneInput.value = "";
-      openingInput.value = "";
-      nameInput.focus();
-    });
+      // Menu + theme + reset
+      document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
+      document.getElementById("resetDataBtnTop").addEventListener("click", resetLocalData);
 
-    document.getElementById("menuBtn").addEventListener("click", () => {
-      const menu = document.getElementById("menuDropdown");
-      if (!menu) return;
-      menu.style.display = menu.style.display === "block" ? "none" : "block";
-    });
-
-    document.getElementById("menuHelp").addEventListener("click", () => {
-      alert(
-        "HOW TO USE:\n\n" +
-        "1) Add Mechanic me naam daalo (phone optional, opening balance optional).\n" +
-        "2) Upar command me 'rahul ke 500 bhadao' ya Quick Entry se mechanic + amount select karo.\n" +
-        "3) Description me maal ka detail likho.\n" +
-        "4) Run dabao.\n" +
-        "5) Statement button se kisi ek mechanic ka pura hisaab dekh sakte ho.\n" +
-        "6) JSON Backup se file download karke safe rakh sakte ho; Restore se wapas laa sakte ho.\n" +
-        "7) Online backup ON ho to cloud pe bhi copy save hoti rahegi."
-      );
-    });
-
-    document.getElementById("menuContact").addEventListener("click", () => {
-      alert("Contact: ");
-    });
-
-    document.getElementById("menuBackup").addEventListener("click", backupData);
-    document.getElementById("menuRestore").addEventListener("click", triggerRestore);
-    document.getElementById("menuChangePin").addEventListener("click", changePin);
-    document.getElementById("menuChangeShop").addEventListener("click", changeShopName);
-    document.getElementById("menuOnlineBackupToggle").addEventListener("click", toggleOnlineBackup);
-    document.getElementById("menuRestoreOnline").addEventListener("click", restoreFromOnlineBackup);
-
-    document.getElementById("restoreFileInput").addEventListener("change", handleRestoreFile);
-
-    document.getElementById("mechanicSearchInput").addEventListener("input", (e) => {
-      mechanicSearchQuery = e.target.value || "";
-      renderMechanics();
-    });
-
-    document.getElementById("searchInput").addEventListener("input", (e) => {
-      searchQuery = e.target.value || "";
-      renderTransactions();
-    });
-
-    document.getElementById("runCommandBtn").addEventListener("click", () => {
-      const cmdInput = document.getElementById("commandInput");
-      const commandText = cmdInput.value.trim();
-      const quickDone = handleQuickEntry();
-      if (!quickDone) {
-        if (!commandText) {
-          alert("Ya to Quick Entry me mechanic + amount do, ya upar command likho.");
-          return;
-        }
-        const ok = handleCommand(commandText);
-        if (!ok) return;
-      }
-      document.getElementById("quickAmountInput").value = "";
-      document.getElementById("descriptionInput").value = "";
-      cmdInput.value = "";
-    });
-
-    document.getElementById("undoBtn").addEventListener("click", undoLastTransaction);
-    document.getElementById("editLastBtn").addEventListener("click", editLastTransaction);
-
-    document.getElementById("downloadMiniCsvBtn").addEventListener("click", () => {
-      if (!currentStatementMechanicId) return;
-      const mech = state.mechanics.find(m => m.id === currentStatementMechanicId);
-      if (!mech) return;
-      const txns = state.transactions
-        .slice()
-        .reverse()
-        .filter(t => t.mechanicId === mech.id);
-      const rows = [];
-      rows.push(["Statement for", mech.name]);
-      rows.push(["Phone", mech.phone || ""]);
-      rows.push(["Generated at", new Date().toISOString()]);
-      rows.push([]);
-      rows.push(["id", "date", "time", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
-      txns.forEach(t => {
-        const dt = new Date(t.timestamp);
-        rows.push([
-          t.id,
-          formatDateDDMMYYYY(dt),
-          formatTimeHHMMSS(dt),
-          t.mechanicId,
-          t.mechanicName,
-          t.type,
-          t.amount,
-          t.note
-        ]);
+      document.getElementById("menuBtn").addEventListener("click", () => {
+        const menu = document.getElementById("menuDropdown");
+        if (!menu) return;
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
       });
-      downloadCSV(`statement_${mech.name.replace(/\s+/g, "_")}.csv`, rows);
+
+      document.getElementById("menuHelp").addEventListener("click", () => {
+        alert(
+          "HOW TO USE:\n\n" +
+          "1) Add Mechanic me naam daalo (phone optional, opening balance optional).\n" +
+          "2) Upar command me 'rahul ke 500 bhadao' ya Quick Entry se mechanic + amount select karo.\n" +
+          "3) Description me maal ka detail likho.\n" +
+          "4) Run dabao.\n" +
+          "5) Statement button se kisi ek mechanic ka pura hisaab dekh sakte ho.\n" +
+          "6) Backup (JSON) download karke kisi bhi device me restore kar sakte ho.\n" +
+          "7) Online backup ON ho to Firestore pe bhi copy save hoti rahegi.\n" +
+          "8) Forgot PIN (OTP) se PIN reset kar sakte ho, agar mobile number verified hai."
+        );
+      });
+
+      document.getElementById("menuContact").addEventListener("click", () => {
+        alert("Contact support: (yahan baad me apna phone number / WhatsApp link add kar sakte ho).");
+      });
+
+      document.getElementById("menuBackup").addEventListener("click", backupData);
+      document.getElementById("menuRestore").addEventListener("click", triggerRestore);
+      document.getElementById("menuOnlineBackupToggle").addEventListener("click", toggleOnlineBackup);
+      document.getElementById("menuRestoreOnline").addEventListener("click", restoreFromOnlineBackup);
+      document.getElementById("menuChangePin").addEventListener("click", changePin);
+      document.getElementById("menuChangeShop").addEventListener("click", changeShopName);
+
+      document.getElementById("restoreFileInput").addEventListener("change", handleRestoreFile);
+
+      document.getElementById("mechanicSearchInput").addEventListener("input", (e) => {
+        mechanicSearchQuery = e.target.value || "";
+        renderMechanics();
+      });
+
+      document.getElementById("searchInput").addEventListener("input", (e) => {
+        searchQuery = e.target.value || "";
+        renderTransactions();
+      });
+
+      document.getElementById("addMechanicBtn").addEventListener("click", () => {
+        const nameInput = document.getElementById("mechanicName");
+        const phoneInput = document.getElementById("mechanicPhone");
+        const openingInput = document.getElementById("openingBalance");
+        addMechanic(
+          nameInput.value.trim(),
+          openingInput.value.trim() || 0,
+          phoneInput.value.trim()
+        );
+        nameInput.value = "";
+        phoneInput.value = "";
+        openingInput.value = "";
+        nameInput.focus();
+      });
+
+      document.getElementById("runCommandBtn").addEventListener("click", () => {
+        const cmdInput = document.getElementById("commandInput");
+        const commandText = cmdInput.value.trim();
+
+        const quickDone = handleQuickEntry();
+        if (!quickDone) {
+          if (!commandText) {
+            alert("Ya to Quick Entry me mechanic + amount do, ya upar command likho.");
+            return;
+          }
+          const ok = handleCommand(commandText);
+          if (!ok) return;
+        }
+
+        document.getElementById("quickAmountInput").value = "";
+        document.getElementById("descriptionInput").value = "";
+        cmdInput.value = "";
+      });
+
+      document.getElementById("undoBtn").addEventListener("click", undoLastTransaction);
+      document.getElementById("editLastBtn").addEventListener("click", editLastTransaction);
+
+      document.getElementById("downloadMiniCsvBtn").addEventListener("click", () => {
+        if (currentStatementMechanicId) {
+          exportSingleMechanicCSV(currentStatementMechanicId);
+        }
+      });
+      document.getElementById("closeMiniBtn").addEventListener("click", () => {
+        document.getElementById("miniStatementCard").style.display = "none";
+        currentStatementMechanicId = null;
+      });
+
+      document.getElementById("exportRangeSelect").addEventListener("change", (e) => {
+        exportRangeMode = e.target.value;
+        const startInput = document.getElementById("exportStartDate");
+        const endInput = document.getElementById("exportEndDate");
+        if (exportRangeMode === "custom") {
+          startInput.style.display = "";
+          endInput.style.display = "";
+        } else {
+          startInput.style.display = "none";
+          endInput.style.display = "none";
+        }
+      });
+
+      document.getElementById("exportMechanicsBtn").addEventListener("click", exportMechanicsCSV);
+      document.getElementById("exportTransactionsBtn").addEventListener("click", exportTransactionsCSV);
+
+      // Firebase auth state
+      firebase.auth().onAuthStateChanged(async (user) => {
+        currentUser = user;
+        if (user) {
+          ensureDeviceId();
+          await syncUserDoc();
+          document.getElementById("phoneLoginScreen").style.display = "none";
+          document.getElementById("lockScreen").style.display = "flex";
+          loadState();
+          initLockScreen();
+        } else {
+          document.getElementById("phoneLoginScreen").style.display = "flex";
+          document.getElementById("lockScreen").style.display = "none";
+        }
+      });
+
+      initPhoneAuthScreen();
     });
-
-    document.getElementById("closeMiniBtn").addEventListener("click", () => {
-      document.getElementById("miniStatementCard").style.display = "none";
-      currentStatementMechanicId = null;
-    });
-
-    document.getElementById("exportMechanicsBtn").addEventListener("click", exportMechanicsCSV);
-    document.getElementById("exportTransactionsBtn").addEventListener("click", exportTransactionsCSV);
-
-    document.getElementById("exportRangeSelect").addEventListener("change", (e) => {
-      exportRangeMode = e.target.value;
-      const startEl = document.getElementById("exportStartDate");
-      const endEl = document.getElementById("exportEndDate");
-      if (exportRangeMode === "custom") {
-        startEl.style.display = "block";
-        endEl.style.display = "block";
-      } else {
-        startEl.style.display = "none";
-        endEl.style.display = "none";
-      }
-    });
-
-    // ------- Initial boot -------
-    loadState();
-    applyTheme();
-    applyShopName();
-    loadOnlineBackupSetting();
-    initPhoneAuthWatcher(); // this will decide phone login / PIN
   </script>
 </body>
 </html>
+
