@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Smart Voice Khata - Mechanic Ledger</title>
+  <title>Smart Voice Khata - Customer Ledger</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#020617">
@@ -392,10 +392,10 @@
     <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start; flex-wrap:wrap;">
       <div style="min-width:200px;">
         <h1>
-          <span id="shopNameLabel"></span>Mechanic Ledger
+          <span id="shopNameLabel"></span>Customer Ledger
         </h1>
         <div class="muted">
-          1️⃣ Pehle neeche wale <b>"Add Mechanic"</b> se naam add karo (opening balance optional).<br/>
+          1️⃣ Pehle neeche wale <b>"Add Customer"</b> se naam add karo (opening balance optional).<br/>
           2️⃣ Upar <b>Command</b> me bolo/type karo ya <b>Quick Entry</b> se select karo, fir Description aur Run dabao.<br/>
           3️⃣ Jab chaho, Excel/OneDrive ke liye CSV export kar lo.
         </div>
@@ -439,9 +439,9 @@
 
     <div class="quick-entry-row">
       <div>
-        <label for="quickMechanicSelect">Mechanic</label>
+        <label for="quickMechanicSelect">Customer</label>
         <select id="quickMechanicSelect">
-          <option value="">Select mechanic</option>
+          <option value="">Select customer</option>
         </select>
       </div>
       <div>
@@ -467,9 +467,9 @@
     </div>
   </div>
 
-  <!-- ADD MECHANIC CARD -->
+  <!-- ADD CUSTOMER CARD -->
   <div class="card">
-    <h2>Add Mechanic</h2>
+    <h2>Add Customer</h2>
     <label for="mechanicName">Name</label>
     <input id="mechanicName" placeholder="e.g. Rahul" />
     <label for="mechanicPhone" style="margin-top:6px;">Phone (optional)</label>
@@ -477,17 +477,17 @@
     <label for="openingBalance" style="margin-top:6px;">Opening balance (optional)</label>
     <input id="openingBalance" type="number" step="0.01" placeholder="0" />
     <div style="margin-top:8px;">
-      <button id="addMechanicBtn">＋ Add mechanic</button>
+      <button id="addMechanicBtn">＋ Add customer</button>
     </div>
   </div>
 
-  <!-- MECHANICS & BALANCES -->
+  <!-- CUSTOMERS & BALANCES -->
   <div class="card">
-    <h2>Mechanics & Balances</h2>
-    <div class="muted" id="totalSummary">Total across all mechanics: ₹0.00 | Total mechanics: 0</div>
+    <h2>Customers & Balances</h2>
+    <div class="muted" id="totalSummary">Total across all customers: ₹0.00 | Total customers: 0</div>
 
     <label for="mechanicSearchInput" class="muted" style="margin-top:6px; display:block;">
-      Search mechanics
+      Search customers
     </label>
     <input id="mechanicSearchInput" placeholder="Search by name..." />
 
@@ -534,7 +534,7 @@
     <h2>Backup / Excel Export</h2>
     <div class="muted" style="margin-bottom:6px;">
       Niche se ek date range select karo (Transactions us range ke hisaab se aayenge).
-      Mechanics ka section hamesha current balance ke saath aayega.<br/>
+      Customers ka section hamesha current balance ke saath aayega.<br/>
       JSON backup file use karke aap kisi bhi device pe data restore kar sakte ho.
     </div>
     <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; align-items:flex-end;">
@@ -559,7 +559,7 @@
         <input id="exportEndDate" type="date" style="display:none;" />
       </div>
       <div style="min-width:180px; display:flex; flex-direction:column; gap:6px;">
-        <button id="exportMechanicsBtn">⬇ Download Mechanics CSV</button>
+        <button id="exportMechanicsBtn">⬇ Download Customers CSV</button>
         <button id="exportTransactionsBtn">⬇ Download Transactions CSV</button>
       </div>
     </div>
@@ -766,11 +766,16 @@
 
     function toggleOnlineBackup() {
       onlineBackupEnabled = !onlineBackupEnabled;
-      localStorage.setItem(ONLINE_BACKUP_KEY, onlineBackupEnabled ? "on" : "off");
+      localStorage.setItem(
+        ONLINE_BACKUP_KEY,
+        onlineBackupEnabled ? "on" : "off"
+      );
       applyOnlineBackupLabel();
       if (onlineBackupEnabled) {
         uploadBackupToCloud("toggle-on");
-        alert("Online backup ON hai. Har change ke baad cloud pe bhi copy save hogi.");
+        alert(
+          "Online backup ON hai. Har change ke baad cloud pe bhi copy save hogi."
+        );
       } else {
         alert("Online backup OFF hai. Ab sirf local storage use hoga.");
       }
@@ -833,7 +838,7 @@
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         try {
           const data = JSON.parse(e.target.result);
           if (!data || typeof data !== "object" || !data.state) {
@@ -851,7 +856,8 @@
             localStorage.setItem(THEME_KEY, data.theme);
           }
           if (data.shopName !== undefined) {
-            if (data.shopName) localStorage.setItem(SHOP_KEY, data.shopName);
+            if (data.shopName)
+              localStorage.setItem(SHOP_KEY, data.shopName);
             else localStorage.removeItem(SHOP_KEY);
           }
           alert("Restore complete. App reload ho raha hai.");
@@ -871,7 +877,10 @@
         return;
       }
       try {
-        const snap = await db.collection("backups").doc(currentUser.uid).get();
+        const snap = await db
+          .collection("backups")
+          .doc(currentUser.uid)
+          .get();
         if (!snap.exists) {
           alert("Cloud pe koi online backup nahi mila.");
           return;
@@ -881,15 +890,19 @@
           alert("Online backup me state data nahi mila.");
           return;
         }
+
         state = data.state;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
         if (data.theme) {
           localStorage.setItem(THEME_KEY, data.theme);
         }
         if (data.shopName !== undefined) {
-          if (data.shopName) localStorage.setItem(SHOP_KEY, data.shopName);
+          if (data.shopName)
+            localStorage.setItem(SHOP_KEY, data.shopName);
           else localStorage.removeItem(SHOP_KEY);
         }
+
         alert("Online backup se data restore ho gaya. Page reload ho raha hai.");
         location.reload();
       } catch (err) {
@@ -1017,15 +1030,18 @@
       alert("PIN change ho gaya.");
     }
 
-    // ------- Forgot PIN via OTP (same phone) -------
+    // ------- Forgot PIN via OTP -------
     let forgotConfirmationResult = null;
 
     function setupRecaptchaIfNeeded() {
       if (window.recaptchaVerifier) return;
       try {
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
-          size: "invisible"
-        });
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+          "reccaptcha-container",
+          {
+            size: "invisible"
+          }
+        );
         window.recaptchaVerifier.render().catch(() => {});
       } catch (e) {
         console.error(e);
@@ -1038,11 +1054,17 @@
         return;
       }
       const phone = currentUser.phoneNumber;
-      if (!confirm(`We will send OTP to ${phone}.\n\nIss number ka OTP aane ke baad naya PIN set kar sakoge.`)) {
+      if (
+        !confirm(
+          We will send OTP to ${phone}.\n\nIss number ka OTP aane ke baad naya PIN set kar sakoge.
+        )
+      ) {
         return;
       }
       setupRecaptchaIfNeeded();
-      firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
+      firebase
+        .auth()
+        .signInWithPhoneNumber(phone, window.recaptchaVerifier)
         .then((conf) => {
           forgotConfirmationResult = conf;
           const otp = prompt("Forgot PIN ke liye aaya hua 6-digit OTP yahan daalo:");
@@ -1069,7 +1091,7 @@
           const lockScreen = document.getElementById("lockScreen");
           if (lockScreen) lockScreen.style.display = "none";
         })
-        .catch(err => {
+        .catch((err) => {
           console.error(err);
           alert("Forgot PIN OTP flow me error: " + (err.message || err));
         });
@@ -1354,7 +1376,7 @@
       saveState("edit-mechanic");
     }
 
-    // ------- Rendering (same as your working logic) -------
+    // ------- Rendering -------
     const mechanicTableBody = document.getElementById("mechanicTableBody");
     const logEl = document.getElementById("log");
     const totalSummaryEl = document.getElementById("totalSummary");
@@ -1403,7 +1425,7 @@
         list.forEach(m => {
           const tr = document.createElement("tr");
           const nameTd = document.createElement("td");
-          nameTd.innerHTML = m.name + (m.phone ? `<br><span class="muted">📞 ${m.phone}</span>` : "");
+          nameTd.innerHTML = m.name + (m.phone ? <br><span class="muted">📞 ${m.phone}</span> : "");
           const balTd = document.createElement("td");
           const balSpan = document.createElement("span");
           balSpan.className = "pill " + (m.balance >= 0 ? "pill-pos" : "pill-neg");
@@ -1431,7 +1453,7 @@
           btnAdd.className = "secondary";
           btnAdd.style.marginLeft = "6px";
           btnAdd.onclick = () => {
-            const amountStr = prompt(`Kitna bhadao karna hai ${m.name} ke naam?`);
+            const amountStr = prompt(Kitna bhadao karna hai ${m.name} ke naam?);
             if (amountStr && !isNaN(amountStr)) {
               addTransaction(m.id, "ADD", Number(amountStr), "Manual add");
             }
@@ -1442,7 +1464,7 @@
           btnDeduct.className = "secondary";
           btnDeduct.style.marginLeft = "6px";
           btnDeduct.onclick = () => {
-            const amountStr = prompt(`Kitna ghataana hai ${m.name} ke naam se?`);
+            const amountStr = prompt(Kitna ghataana hai ${m.name} ke naam se?);
             if (amountStr && !isNaN(amountStr)) {
               addTransaction(m.id, "DEDUCT", Number(amountStr), "Manual deduct");
             }
@@ -1499,9 +1521,9 @@
           const typeClass = t.type === "ADD" ? "tag-add" : "tag-deduct";
           div.innerHTML =
             `<span class="${typeClass}">${t.type}</span> ₹${formatAmount(t.amount)} ` +
-            `${t.type === "ADD" ? "to" : "from"} <b>${t.mechanicName}</b>` +
+            ${t.type === "ADD" ? "to" : "from"} <b>${t.mechanicName}</b> +
             (t.note ? ` — ${t.note}` : "") +
-            `<br><span class="muted">${date.toLocaleString()}</span>`;
+            <br><span class="muted">${date.toLocaleString()}</span>;
           const delBtn = document.createElement("button");
           delBtn.textContent = "🗑 Delete";
           delBtn.className = "secondary";
@@ -1539,7 +1561,7 @@
         `Today – ` +
         `<span class="tag-add">ADD: ₹${formatAmount(addTotal)}</span> ` +
         `&nbsp;<span class="tag-deduct">DEDUCT: ₹${formatAmount(deductTotal)}</span> ` +
-        `&nbsp;<span>Net: ₹${formatAmount(net)}</span>`;
+        &nbsp;<span>Net: ₹${formatAmount(net)}</span>;
     }
 
     function renderMiniStatement() {
@@ -1557,7 +1579,7 @@
         return;
       }
       const txns = state.transactions.filter(t => t.mechanicId === mech.id);
-      miniTitle.textContent = `Statement – ${mech.name}`;
+      miniTitle.textContent = Statement – ${mech.name};
       let totalAdd = 0, totalDeduct = 0;
       txns.forEach(t => {
         if (t.type === "ADD") totalAdd += t.amount;
@@ -1566,7 +1588,7 @@
       miniTotals.innerHTML =
         `<span class="tag-add">ADD: ₹${formatAmount(totalAdd)}</span> &nbsp; ` +
         `<span class="tag-deduct">DEDUCT: ₹${formatAmount(totalDeduct)}</span> &nbsp; ` +
-        `<span>Net: ₹${formatAmount(mech.balance)}</span>`;
+        <span>Net: ₹${formatAmount(mech.balance)}</span>;
       miniBody.innerHTML = "";
       if (txns.length === 0) {
         const div = document.createElement("div");
@@ -1580,9 +1602,9 @@
           const typeClass = t.type === "ADD" ? "tag-add" : "tag-deduct";
           div.className = "log-entry";
           div.innerHTML =
-            `<span class="${typeClass}">${t.type}</span> ₹${formatAmount(t.amount)}` +
+            <span class="${typeClass}">${t.type}</span> ₹${formatAmount(t.amount)} +
             (t.note ? ` — ${t.note}` : "") +
-            `<br><span class="muted">${date.toLocaleString()}</span>`;
+            <br><span class="muted">${date.toLocaleString()}</span>;
           miniBody.appendChild(div);
         });
       }
@@ -1591,10 +1613,10 @@
     // ------- CSV export helpers -------
     function pad2(n) { return n.toString().padStart(2, "0"); }
     function formatDateDDMMYYYY(d) {
-      return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
+      return ${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()};
     }
     function formatTimeHHMMSS(d) {
-      return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+      return ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())};
     }
     function toCSVValue(value) {
       if (value == null) return "";
@@ -1706,7 +1728,7 @@
         "sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19
       };
       const tens = {
-        "twenty":20,"thirty":30,"forty":30+10,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90
+        "twenty":20,"thirty":30,"forty":40,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90
       };
       let total = 0, current = 0, found = false;
       for (const tok of tokens) {
@@ -1820,8 +1842,8 @@
       );
       if (!mechanic) {
         alert(
-          `"${namePart}" ka naam list me nahi mila.\n` +
-          `Pehle neeche "Add Mechanic" me iss naam se entry banao, phir command do.`
+          "${namePart}" ka naam list me nahi mila.\n +
+          Pehle neeche "Add Mechanic" me iss naam se entry banao, phir command do.
         );
         return false;
       }
@@ -1831,11 +1853,11 @@
         ? extraNote + " | Command: " + original
         : "Command: " + original;
       const previewMsg =
-        `Are you sure?\n\n` +
-        `Name: ${mechanic.name}\n` +
-        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
-        `Amount: ₹${formatAmount(amount)}\n` +
-        `Note: ${extraNote || "-"}\n`;
+        Are you sure?\n\n +
+        Name: ${mechanic.name}\n +
+        Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n +
+        Amount: ₹${formatAmount(amount)}\n +
+        Note: ${extraNote || "-"}\n;
       if (!confirm(previewMsg)) return false;
       addTransaction(mechanic.id, type, amount, finalNote);
       showToast(mechanic.name, type, amount, extraNote || original);
@@ -1871,11 +1893,11 @@
         ? extraNote + " | Quick entry"
         : "Quick entry";
       const previewMsg =
-        `Are you sure?\n\n` +
-        `Name: ${mechanic.name}\n` +
-        `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
-        `Amount: ₹${formatAmount(amount)}\n` +
-        `Note: ${extraNote || "-"}\n`;
+        Are you sure?\n\n +
+        Name: ${mechanic.name}\n +
+        Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n +
+        Amount: ₹${formatAmount(amount)}\n +
+        Note: ${extraNote || "-"}\n;
       if (!confirm(previewMsg)) return false;
       addTransaction(mechanic.id, type, amount, finalNote);
       showToast(mechanic.name, type, amount, extraNote || "Quick entry");
@@ -2010,7 +2032,7 @@
           t.note
         ]);
       });
-      downloadCSV(`statement_${mech.name.replace(/\s+/g, "_")}.csv`, rows);
+      downloadCSV(statement_${mech.name.replace(/\s+/g, "_")}.csv, rows);
     });
 
     document.getElementById("closeMiniBtn").addEventListener("click", () => {
