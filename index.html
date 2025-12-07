@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Smart Voice Khata - Customer Ledger</title>
+  <title>Smart Voice Khata - Mechanic Ledger</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#020617">
@@ -392,10 +392,10 @@
     <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start; flex-wrap:wrap;">
       <div style="min-width:200px;">
         <h1>
-          <span id="shopNameLabel"></span>Customer Ledger
+          <span id="shopNameLabel"></span>Mechanic Ledger
         </h1>
         <div class="muted">
-          1️⃣ Pehle neeche wale <b>"Add customer"</b> se naam add karo (opening balance optional).<br/>
+          1️⃣ Pehle neeche wale <b>"Add Mechanic"</b> se naam add karo (opening balance optional).<br/>
           2️⃣ Upar <b>Command</b> me bolo/type karo ya <b>Quick Entry</b> se select karo, fir Description aur Run dabao.<br/>
           3️⃣ Jab chaho, Excel/OneDrive ke liye CSV export kar lo.
         </div>
@@ -439,9 +439,9 @@
 
     <div class="quick-entry-row">
       <div>
-        <label for="quickcustomerSelect">customer</label>
-        <select id="quickcustomerSelect">
-          <option value="">Select customer</option>
+        <label for="quickMechanicSelect">Mechanic</label>
+        <select id="quickMechanicSelect">
+          <option value="">Select mechanic</option>
         </select>
       </div>
       <div>
@@ -467,29 +467,29 @@
     </div>
   </div>
 
-  <!-- ADD customer CARD -->
+  <!-- ADD MECHANIC CARD -->
   <div class="card">
-    <h2>Add Customer</h2>
-    <label for="customerName">Name</label>
-    <input id="customerName" placeholder="e.g. Rahul" />
-    <label for="customerPhone" style="margin-top:6px;">Phone (optional)</label>
-    <input id="customerPhone" placeholder="e.g. 9876543210" />
+    <h2>Add Mechanic</h2>
+    <label for="mechanicName">Name</label>
+    <input id="mechanicName" placeholder="e.g. Rahul" />
+    <label for="mechanicPhone" style="margin-top:6px;">Phone (optional)</label>
+    <input id="mechanicPhone" placeholder="e.g. 9876543210" />
     <label for="openingBalance" style="margin-top:6px;">Opening balance (optional)</label>
     <input id="openingBalance" type="number" step="0.01" placeholder="0" />
     <div style="margin-top:8px;">
-      <button id="addcustomerBtn">＋ Add Customer</button>
+      <button id="addMechanicBtn">＋ Add mechanic</button>
     </div>
   </div>
 
-  <!-- customerS & BALANCES -->
+  <!-- MECHANICS & BALANCES -->
   <div class="card">
-    <h2>Customers & Balances</h2>
-    <div class="muted" id="totalSummary">Total across all customers: ₹0.00 | Total customers: 0</div>
+    <h2>Mechanics & Balances</h2>
+    <div class="muted" id="totalSummary">Total across all mechanics: ₹0.00 | Total mechanics: 0</div>
 
-    <label for="customerSearchInput" class="muted" style="margin-top:6px; display:block;">
-      Search customers
+    <label for="mechanicSearchInput" class="muted" style="margin-top:6px; display:block;">
+      Search mechanics
     </label>
-    <input id="customerSearchInput" placeholder="Search by name..." />
+    <input id="mechanicSearchInput" placeholder="Search by name..." />
 
     <div style="overflow-x:auto; margin-top:8px;">
       <table>
@@ -500,7 +500,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="customerTableBody"></tbody>
+        <tbody id="mechanicTableBody"></tbody>
       </table>
     </div>
   </div>
@@ -534,7 +534,7 @@
     <h2>Backup / Excel Export</h2>
     <div class="muted" style="margin-bottom:6px;">
       Niche se ek date range select karo (Transactions us range ke hisaab se aayenge).
-      customers ka section hamesha current balance ke saath aayega.<br/>
+      Mechanics ka section hamesha current balance ke saath aayega.<br/>
       JSON backup file use karke aap kisi bhi device pe data restore kar sakte ho.
     </div>
     <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; align-items:flex-end;">
@@ -559,7 +559,7 @@
         <input id="exportEndDate" type="date" style="display:none;" />
       </div>
       <div style="min-width:180px; display:flex; flex-direction:column; gap:6px;">
-        <button id="exportcustomersBtn">⬇ Download Customers CSV</button>
+        <button id="exportMechanicsBtn">⬇ Download Mechanics CSV</button>
         <button id="exportTransactionsBtn">⬇ Download Transactions CSV</button>
       </div>
     </div>
@@ -587,18 +587,18 @@
     const db = firebase.firestore();
 
     // ------- Local keys / globals -------
-    const STORAGE_KEY = "customerLedgerLOCAL_WORDS";
-    const THEME_KEY = "customerLedgerTheme";
-    const PIN_KEY = "customerLedgerPIN";
-    const GBOARD_TIP_KEY = "customerLedgerGboardTip";
-    const SHOP_KEY = "customerLedgerShopName";
-    const DEVICE_ID_KEY = "customerLedgerDeviceId";
-    const ONLINE_BACKUP_KEY = "customerLedgerOnlineBackup";
+    const STORAGE_KEY = "mechanicLedgerLOCAL_WORDS";
+    const THEME_KEY = "mechanicLedgerTheme";
+    const PIN_KEY = "mechanicLedgerPIN";
+    const GBOARD_TIP_KEY = "mechanicLedgerGboardTip";
+    const SHOP_KEY = "mechanicLedgerShopName";
+    const DEVICE_ID_KEY = "mechanicLedgerDeviceId";
+    const ONLINE_BACKUP_KEY = "mechanicLedgerOnlineBackup";
 
-    let state = { customers: [], transactions: [] };
+    let state = { mechanics: [], transactions: [] };
     let searchQuery = "";
-    let customerSearchQuery = "";
-    let currentStatementcustomerId = null;
+    let mechanicSearchQuery = "";
+    let currentStatementMechanicId = null;
     let toastTimeoutId = null;
     let exportRangeMode = "all";
     let currentTheme = "dark";
@@ -616,7 +616,7 @@
       });
     }
 
-    function showToast(customerName, type, amount, note) {
+    function showToast(mechanicName, type, amount, note) {
       const toast = document.getElementById("toast");
       const typeClass = type === "ADD" ? "tag-add" : "tag-deduct";
       const typeLabel = type === "ADD" ? "ADD" : "DEDUCT";
@@ -624,7 +624,7 @@
       toast.innerHTML = `
         <div class="toast-title">
           <span class="${typeClass}">${typeLabel}</span>
-          &nbsp;₹${formatAmount(amount)} for <b>${customerName}</b>
+          &nbsp;₹${formatAmount(amount)} for <b>${mechanicName}</b>
         </div>
         ${note ? `<div class="toast-note">${note}</div>` : ""}
       `;
@@ -814,7 +814,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "customer_ledger_backup.json";
+      a.download = "mechanic_ledger_backup.json";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1165,10 +1165,10 @@
       }
     }
 
-    // ------- CORE DATA OPS (customers & transactions) -------
-    function addcustomer(name, openingBalance = 0, phone = "") {
+    // ------- CORE DATA OPS (mechanics & transactions) -------
+    function addMechanic(name, openingBalance = 0, phone = "") {
       if (!name.trim()) return;
-      const existing = state.customers.find(
+      const existing = state.mechanics.find(
         m => m.name.trim().toLowerCase() === name.trim().toLowerCase()
       );
       if (existing) {
@@ -1178,24 +1178,24 @@
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
       const opening = Number(openingBalance) || 0;
       const mech = { id, name: name.trim(), balance: 0, phone: phone.trim() || "" };
-      state.customers.push(mech);
+      state.mechanics.push(mech);
       if (opening) {
         addTransaction(id, "ADD", opening, "Opening balance");
       } else {
-        saveState("add-customer");
+        saveState("add-mechanic");
       }
     }
 
-    function addTransaction(customerId, type, amount, note = "") {
-      const customer = state.customers.find(m => m.id === customerId);
-      if (!customer) return;
-      if (type === "ADD") customer.balance += amount;
-      else if (type === "DEDUCT") customer.balance -= amount;
+    function addTransaction(mechanicId, type, amount, note = "") {
+      const mechanic = state.mechanics.find(m => m.id === mechanicId);
+      if (!mechanic) return;
+      if (type === "ADD") mechanic.balance += amount;
+      else if (type === "DEDUCT") mechanic.balance -= amount;
 
       state.transactions.unshift({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-        customerId,
-        customerName: customer.name,
+        mechanicId,
+        mechanicName: mechanic.name,
         type,
         amount,
         note,
@@ -1210,7 +1210,7 @@
         return;
       }
       const last = state.transactions[0];
-      const mech = state.customers.find(m => m.id === last.customerId);
+      const mech = state.mechanics.find(m => m.id === last.mechanicId);
       if (mech) {
         if (last.type === "ADD") mech.balance -= last.amount;
         else if (last.type === "DEDUCT") mech.balance += last.amount;
@@ -1226,14 +1226,14 @@
         return;
       }
       const t = state.transactions[0];
-      const mech = state.customers.find(m => m.id === t.customerId);
+      const mech = state.mechanics.find(m => m.id === t.mechanicId);
       if (!mech) {
-        alert("customer nahi mila (data mismatch).");
+        alert("Mechanic nahi mila (data mismatch).");
         return;
       }
       const newAmountStr = prompt(
         "Last transaction ka amount change karo:\n\n" +
-        "Name: " + t.customerName + "\n" +
+        "Name: " + t.mechanicName + "\n" +
         "Type: " + t.type + "\n" +
         "Old amount: ₹" + formatAmount(t.amount) + "\n\n" +
         "New amount (₹):",
@@ -1268,10 +1268,10 @@
         return;
       }
       const t = state.transactions[index];
-      const mech = state.customers.find(m => m.id === t.customerId);
+      const mech = state.mechanics.find(m => m.id === t.mechanicId);
       const confirmMsg =
         "Ye transaction delete karna hai?\n\n" +
-        "Name: " + (t.customerName || "") + "\n" +
+        "Name: " + (t.mechanicName || "") + "\n" +
         "Type: " + t.type + "\n" +
         "Amount: ₹" + formatAmount(t.amount) + "\n" +
         "Note: " + (t.note || "-");
@@ -1285,20 +1285,20 @@
       alert("Transaction delete ho gaya.");
     }
 
-    function deletecustomer(id) {
-      if (!confirm("Is customer ka pura data hata du (sirf local + cloud backup se)?")) return;
-      state.customers = state.customers.filter(m => m.id !== id);
-      state.transactions = state.transactions.filter(t => t.customerId !== id);
-      saveState("delete-customer");
+    function deleteMechanic(id) {
+      if (!confirm("Is mechanic ka pura data hata du (sirf local + cloud backup se)?")) return;
+      state.mechanics = state.mechanics.filter(m => m.id !== id);
+      state.transactions = state.transactions.filter(t => t.mechanicId !== id);
+      saveState("delete-mechanic");
     }
 
-    function editcustomer(mechId) {
-      const mech = state.customers.find(m => m.id === mechId);
+    function editMechanic(mechId) {
+      const mech = state.mechanics.find(m => m.id === mechId);
       if (!mech) {
-        alert("customer nahi mila.");
+        alert("Mechanic nahi mila.");
         return;
       }
-      const newName = prompt("customer ka naam change karo:", mech.name);
+      const newName = prompt("Mechanic ka naam change karo:", mech.name);
       if (newName === null) return;
       const trimmedName = newName.trim();
       if (!trimmedName) {
@@ -1308,15 +1308,15 @@
       const newPhone = prompt("Phone number (optional):", mech.phone || "");
       if (newPhone === null) return;
 
-      const exists = state.customers.some(
+      const exists = state.mechanics.some(
         m => m.id !== mech.id && m.name.trim().toLowerCase() === trimmedName.toLowerCase()
       );
       if (exists) {
-        alert("Ye naam kisi aur customer ke liye use ho raha hai. Alag naam use karo.");
+        alert("Ye naam kisi aur mechanic ke liye use ho raha hai. Alag naam use karo.");
         return;
       }
 
-      const mechTxnsAll = state.transactions.filter(t => t.customerId === mech.id);
+      const mechTxnsAll = state.transactions.filter(t => t.mechanicId === mech.id);
       const openingTxns = mechTxnsAll.filter(
         t => t.type === "ADD" && t.note === "Opening balance"
       );
@@ -1349,56 +1349,56 @@
       mech.name = trimmedName;
       mech.phone = newPhone.trim();
       state.transactions.forEach(t => {
-        if (t.customerId === mech.id) t.customerName = trimmedName;
+        if (t.mechanicId === mech.id) t.mechanicName = trimmedName;
       });
-      saveState("edit-customer");
+      saveState("edit-mechanic");
     }
 
     // ------- Rendering (same as your working logic) -------
-    const customerTableBody = document.getElementById("customerTableBody");
+    const mechanicTableBody = document.getElementById("mechanicTableBody");
     const logEl = document.getElementById("log");
     const totalSummaryEl = document.getElementById("totalSummary");
 
     function render() {
-      rendercustomers();
+      renderMechanics();
       renderTransactions();
       renderMiniStatement();
       renderTodaySummary();
     }
 
-    function refreshQuickEntrycustomers() {
-      const sel = document.getElementById("quickcustomerSelect");
+    function refreshQuickEntryMechanics() {
+      const sel = document.getElementById("quickMechanicSelect");
       if (!sel) return;
       const prev = sel.value;
       sel.innerHTML = "";
       const opt = document.createElement("option");
       opt.value = "";
-      opt.textContent = "Select customer";
+      opt.textContent = "Select mechanic";
       sel.appendChild(opt);
-      state.customers.forEach(m => {
+      state.mechanics.forEach(m => {
         const o = document.createElement("option");
         o.value = m.id;
         o.textContent = m.name;
         sel.appendChild(o);
       });
-      if (prev && state.customers.some(m => m.id === prev)) sel.value = prev;
+      if (prev && state.mechanics.some(m => m.id === prev)) sel.value = prev;
     }
 
-    function rendercustomers() {
-      customerTableBody.innerHTML = "";
-      let list = state.customers;
-      if (customerSearchQuery.trim()) {
-        const q = customerSearchQuery.toLowerCase();
+    function renderMechanics() {
+      mechanicTableBody.innerHTML = "";
+      let list = state.mechanics;
+      if (mechanicSearchQuery.trim()) {
+        const q = mechanicSearchQuery.toLowerCase();
         list = list.filter(m => m.name.toLowerCase().includes(q));
       }
       if (list.length === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
         td.colSpan = 3;
-        td.textContent = "No customers yet. Pehle neeche se naam add karo.";
+        td.textContent = "No mechanics yet. Pehle neeche se naam add karo.";
         td.className = "muted";
         tr.appendChild(td);
-        customerTableBody.appendChild(tr);
+        mechanicTableBody.appendChild(tr);
       } else {
         list.forEach(m => {
           const tr = document.createElement("tr");
@@ -1415,7 +1415,7 @@
           btnStatement.textContent = "📄 Statement";
           btnStatement.className = "secondary";
           btnStatement.onclick = () => {
-            currentStatementcustomerId = m.id;
+            currentStatementMechanicId = m.id;
             renderMiniStatement();
             document.getElementById("miniStatementCard").style.display = "block";
           };
@@ -1424,7 +1424,7 @@
           btnEdit.textContent = "✏ Edit";
           btnEdit.className = "secondary";
           btnEdit.style.marginLeft = "6px";
-          btnEdit.onclick = () => editcustomer(m.id);
+          btnEdit.onclick = () => editMechanic(m.id);
 
           const btnAdd = document.createElement("button");
           btnAdd.textContent = "＋ Add";
@@ -1452,7 +1452,7 @@
           btnDelete.textContent = "🗑";
           btnDelete.className = "secondary";
           btnDelete.style.marginLeft = "6px";
-          btnDelete.onclick = () => deletecustomer(m.id);
+          btnDelete.onclick = () => deleteMechanic(m.id);
 
           actionsTd.appendChild(btnStatement);
           actionsTd.appendChild(btnEdit);
@@ -1463,15 +1463,15 @@
           tr.appendChild(nameTd);
           tr.appendChild(balTd);
           tr.appendChild(actionsTd);
-          customerTableBody.appendChild(tr);
+          mechanicTableBody.appendChild(tr);
         });
       }
-      const total = state.customers.reduce((sum, m) => sum + m.balance, 0);
-      const count = state.customers.length;
+      const total = state.mechanics.reduce((sum, m) => sum + m.balance, 0);
+      const count = state.mechanics.length;
       totalSummaryEl.textContent =
-        "Total across all customers: ₹" + formatAmount(total) +
-        " | Total customers: " + count;
-      refreshQuickEntrycustomers();
+        "Total across all mechanics: ₹" + formatAmount(total) +
+        " | Total mechanics: " + count;
+      refreshQuickEntryMechanics();
     }
 
     function renderTransactions() {
@@ -1480,7 +1480,7 @@
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         txns = txns.filter(t =>
-          t.customerName.toLowerCase().includes(q) ||
+          t.mechanicName.toLowerCase().includes(q) ||
           (t.note && t.note.toLowerCase().includes(q)) ||
           t.type.toLowerCase().includes(q) ||
           String(t.amount).includes(q)
@@ -1499,7 +1499,7 @@
           const typeClass = t.type === "ADD" ? "tag-add" : "tag-deduct";
           div.innerHTML =
             `<span class="${typeClass}">${t.type}</span> ₹${formatAmount(t.amount)} ` +
-            `${t.type === "ADD" ? "to" : "from"} <b>${t.customerName}</b>` +
+            `${t.type === "ADD" ? "to" : "from"} <b>${t.mechanicName}</b>` +
             (t.note ? ` — ${t.note}` : "") +
             `<br><span class="muted">${date.toLocaleString()}</span>`;
           const delBtn = document.createElement("button");
@@ -1547,16 +1547,16 @@
       const miniBody = document.getElementById("miniBody");
       const miniTitle = document.getElementById("miniTitle");
       const miniTotals = document.getElementById("miniTotals");
-      if (!currentStatementcustomerId) {
+      if (!currentStatementMechanicId) {
         card.style.display = "none";
         return;
       }
-      const mech = state.customers.find(m => m.id === currentStatementcustomerId);
+      const mech = state.mechanics.find(m => m.id === currentStatementMechanicId);
       if (!mech) {
         card.style.display = "none";
         return;
       }
-      const txns = state.transactions.filter(t => t.customerId === mech.id);
+      const txns = state.transactions.filter(t => t.mechanicId === mech.id);
       miniTitle.textContent = `Statement – ${mech.name}`;
       let totalAdd = 0, totalDeduct = 0;
       txns.forEach(t => {
@@ -1571,7 +1571,7 @@
       if (txns.length === 0) {
         const div = document.createElement("div");
         div.className = "muted";
-        div.textContent = "No transactions for this customer yet.";
+        div.textContent = "No transactions for this mechanic yet.";
         miniBody.appendChild(div);
       } else {
         txns.forEach(t => {
@@ -1616,13 +1616,13 @@
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }
-    function exportcustomersCSV() {
+    function exportMechanicsCSV() {
       const rows = [];
       rows.push(["id", "name", "phone", "current_balance"]);
-      state.customers.forEach(m => {
+      state.mechanics.forEach(m => {
         rows.push([m.id, m.name, m.phone || "", m.balance]);
       });
-      downloadCSV("customers.csv", rows);
+      downloadCSV("mechanics.csv", rows);
     }
     function getSelectedDateRange() {
       const now = new Date();
@@ -1671,15 +1671,15 @@
         });
       }
       const rows = [];
-      rows.push(["id", "date", "time", "customer_id", "customer_name", "type", "amount", "description"]);
+      rows.push(["id", "date", "time", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
       txns.forEach(t => {
         const dt = new Date(t.timestamp);
         rows.push([
           t.id,
           formatDateDDMMYYYY(dt),
           formatTimeHHMMSS(dt),
-          t.customerId,
-          t.customerName,
+          t.mechanicId,
+          t.mechanicName,
           t.type,
           t.amount,
           t.note
@@ -1815,13 +1815,13 @@
         );
         return false;
       }
-      const customer = state.customers.find(
+      const mechanic = state.mechanics.find(
         m => m.name.toLowerCase() === namePart.toLowerCase()
       );
-      if (!customer) {
+      if (!mechanic) {
         alert(
           `"${namePart}" ka naam list me nahi mila.\n` +
-          `Pehle neeche "Add customer" me iss naam se entry banao, phir command do.`
+          `Pehle neeche "Add Mechanic" me iss naam se entry banao, phir command do.`
         );
         return false;
       }
@@ -1832,18 +1832,18 @@
         : "Command: " + original;
       const previewMsg =
         `Are you sure?\n\n` +
-        `Name: ${customer.name}\n` +
+        `Name: ${mechanic.name}\n` +
         `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
         `Amount: ₹${formatAmount(amount)}\n` +
         `Note: ${extraNote || "-"}\n`;
       if (!confirm(previewMsg)) return false;
-      addTransaction(customer.id, type, amount, finalNote);
-      showToast(customer.name, type, amount, extraNote || original);
+      addTransaction(mechanic.id, type, amount, finalNote);
+      showToast(mechanic.name, type, amount, extraNote || original);
       return true;
     }
 
     function handleQuickEntry() {
-      const mechSel = document.getElementById("quickcustomerSelect");
+      const mechSel = document.getElementById("quickMechanicSelect");
       const amtInput = document.getElementById("quickAmountInput");
       const actionSel = document.getElementById("quickActionSelect");
       const descInput = document.getElementById("descriptionInput");
@@ -1861,9 +1861,9 @@
         alert("Amount 0 se bada hona chahiye.");
         return false;
       }
-      const customer = state.customers.find(m => m.id === mechId);
-      if (!customer) {
-        alert("customer list me nahi mila.");
+      const mechanic = state.mechanics.find(m => m.id === mechId);
+      if (!mechanic) {
+        alert("Mechanic list me nahi mila.");
         return false;
       }
       const extraNote = descInput.value.trim();
@@ -1872,20 +1872,20 @@
         : "Quick entry";
       const previewMsg =
         `Are you sure?\n\n` +
-        `Name: ${customer.name}\n` +
+        `Name: ${mechanic.name}\n` +
         `Type: ${type === "ADD" ? "ADD ( bhadao)" : "DEDUCT (ghata)"}\n` +
         `Amount: ₹${formatAmount(amount)}\n` +
         `Note: ${extraNote || "-"}\n`;
       if (!confirm(previewMsg)) return false;
-      addTransaction(customer.id, type, amount, finalNote);
-      showToast(customer.name, type, amount, extraNote || "Quick entry");
+      addTransaction(mechanic.id, type, amount, finalNote);
+      showToast(mechanic.name, type, amount, extraNote || "Quick entry");
       return true;
     }
 
     // ------- RESET EVERYTHING -------
     async function resetDataAll() {
-      if (!confirm("Saara local data, PIN aur phone login clear kar du? (customers + Transactions + PIN + login sab clear)")) return;
-      state = { customers: [], transactions: [] };
+      if (!confirm("Saara local data, PIN aur phone login clear kar du? (Mechanics + Transactions + PIN + login sab clear)")) return;
+      state = { mechanics: [], transactions: [] };
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(PIN_KEY);
       localStorage.removeItem(GBOARD_TIP_KEY);
@@ -1906,11 +1906,11 @@
     document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
     document.getElementById("resetDataBtnTop").addEventListener("click", resetDataAll);
 
-    document.getElementById("addcustomerBtn").addEventListener("click", () => {
-      const nameInput = document.getElementById("customerName");
-      const phoneInput = document.getElementById("customerPhone");
+    document.getElementById("addMechanicBtn").addEventListener("click", () => {
+      const nameInput = document.getElementById("mechanicName");
+      const phoneInput = document.getElementById("mechanicPhone");
       const openingInput = document.getElementById("openingBalance");
-      addcustomer(
+      addMechanic(
         nameInput.value.trim(),
         openingInput.value.trim() || 0,
         phoneInput.value.trim()
@@ -1930,11 +1930,11 @@
     document.getElementById("menuHelp").addEventListener("click", () => {
       alert(
         "HOW TO USE:\n\n" +
-        "1) Add customer me naam daalo (phone optional, opening balance optional).\n" +
-        "2) Upar command me 'rahul ke 500 bhadao' ya Quick Entry se customer + amount select karo.\n" +
+        "1) Add Mechanic me naam daalo (phone optional, opening balance optional).\n" +
+        "2) Upar command me 'rahul ke 500 bhadao' ya Quick Entry se mechanic + amount select karo.\n" +
         "3) Description me maal ka detail likho.\n" +
         "4) Run dabao.\n" +
-        "5) Statement button se kisi ek customer ka pura hisaab dekh sakte ho.\n" +
+        "5) Statement button se kisi ek mechanic ka pura hisaab dekh sakte ho.\n" +
         "6) JSON Backup se file download karke safe rakh sakte ho; Restore se wapas laa sakte ho.\n" +
         "7) Online backup ON ho to cloud pe bhi copy save hoti rahegi."
       );
@@ -1953,9 +1953,9 @@
 
     document.getElementById("restoreFileInput").addEventListener("change", handleRestoreFile);
 
-    document.getElementById("customerSearchInput").addEventListener("input", (e) => {
-      customerSearchQuery = e.target.value || "";
-      rendercustomers();
+    document.getElementById("mechanicSearchInput").addEventListener("input", (e) => {
+      mechanicSearchQuery = e.target.value || "";
+      renderMechanics();
     });
 
     document.getElementById("searchInput").addEventListener("input", (e) => {
@@ -1969,7 +1969,7 @@
       const quickDone = handleQuickEntry();
       if (!quickDone) {
         if (!commandText) {
-          alert("Ya to Quick Entry me customer + amount do, ya upar command likho.");
+          alert("Ya to Quick Entry me mechanic + amount do, ya upar command likho.");
           return;
         }
         const ok = handleCommand(commandText);
@@ -1984,27 +1984,27 @@
     document.getElementById("editLastBtn").addEventListener("click", editLastTransaction);
 
     document.getElementById("downloadMiniCsvBtn").addEventListener("click", () => {
-      if (!currentStatementcustomerId) return;
-      const mech = state.customers.find(m => m.id === currentStatementcustomerId);
+      if (!currentStatementMechanicId) return;
+      const mech = state.mechanics.find(m => m.id === currentStatementMechanicId);
       if (!mech) return;
       const txns = state.transactions
         .slice()
         .reverse()
-        .filter(t => t.customerId === mech.id);
+        .filter(t => t.mechanicId === mech.id);
       const rows = [];
       rows.push(["Statement for", mech.name]);
       rows.push(["Phone", mech.phone || ""]);
       rows.push(["Generated at", new Date().toISOString()]);
       rows.push([]);
-      rows.push(["id", "date", "time", "customer_id", "customer_name", "type", "amount", "description"]);
+      rows.push(["id", "date", "time", "mechanic_id", "mechanic_name", "type", "amount", "description"]);
       txns.forEach(t => {
         const dt = new Date(t.timestamp);
         rows.push([
           t.id,
           formatDateDDMMYYYY(dt),
           formatTimeHHMMSS(dt),
-          t.customerId,
-          t.customerName,
+          t.mechanicId,
+          t.mechanicName,
           t.type,
           t.amount,
           t.note
@@ -2015,10 +2015,10 @@
 
     document.getElementById("closeMiniBtn").addEventListener("click", () => {
       document.getElementById("miniStatementCard").style.display = "none";
-      currentStatementcustomerId = null;
+      currentStatementMechanicId = null;
     });
 
-    document.getElementById("exportcustomersBtn").addEventListener("click", exportcustomersCSV);
+    document.getElementById("exportMechanicsBtn").addEventListener("click", exportMechanicsCSV);
     document.getElementById("exportTransactionsBtn").addEventListener("click", exportTransactionsCSV);
 
     document.getElementById("exportRangeSelect").addEventListener("change", (e) => {
@@ -2043,4 +2043,3 @@
   </script>
 </body>
 </html>
-
